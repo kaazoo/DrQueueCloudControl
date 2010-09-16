@@ -1,6 +1,9 @@
 DrQueueCloudWatcher
 
-This is a daemon for DrQueueCloudControl which is used to watch and control DrQueue slaves.
+This is a daemon which is used to supervise render sessions and control DrQueue slaves. It needs connectivity to DrQueueOnRails and to DrQueueCloudControl instance.
+
+DQCW uses the Rubygems drqueue and active_record.
+
 
 Copyright (C) 2010 Andreas Schroeder
 
