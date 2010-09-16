@@ -26,7 +26,7 @@ while 1
   sleep DQCWconfig.run_interval
   puts "* waiting a while"
 
-  # cycle through all database jobs
+  # cycle through all DQOR database jobs
   job_list = DQCWdb.fetch_job_list
   job_list.each do |job|
     # get needed info
@@ -36,7 +36,7 @@ while 1
     # look if job belongs to a session
     if (session = DQCWdb.find_render_session(user_hash)) != nil
       # look if session was used before
-      if session.time_passed = 0
+      if session.time_passed == 0
         session.start_timestamp = Time.now.to_i
       else
         # update time counter
