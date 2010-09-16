@@ -23,8 +23,8 @@ include DQCWqueue
 require 'MD5'
 
 while 1
-  sleep DQCWconfig.sleep_interval
   puts "* waiting a while"
+  sleep DQCWconfig.sleep_interval
 
   # cycle through all DQOR database jobs
   job_list = DQCWdb.fetch_job_list
@@ -70,7 +70,8 @@ while 1
 
   end
 
-
+  # save resources
+  DQCWqueue.shutdown_old_slaves
 
 
 end
