@@ -1,0 +1,7 @@
+DrQueueCloudWatcher
+
+This is a daemon for DrQueueCloudControl which is used to watch and control DrQueue slaves.
+
+Copyright (C) 2010 Andreas Schroeder
+
+Licensed under GNU General Public License version 3.
