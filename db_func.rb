@@ -4,17 +4,18 @@ module DQCWdb
     # foo
     return []
   end
-  
+
+
   def fetch_user_data(job_id)
     # foo
     return []
   end
-  
-  
+
+
   def find_render_session(user_hash)
     # foo
     return nil
   end
-  
-  
+
+
 end
