@@ -1,19 +1,74 @@
 module DQCWdb
 
+  require 'active_record'
+
+  # config
+  require 'config'
+  include DQCWconfig
+
+
+  class Job < ActiveRecord::Base
+    belongs_to :profile
+  end
+
+  class Profile < ActiveRecord::Base
+    has_many :jobs
+  end
+
+  class Rendersession < ActiveRecord::Base
+  end
+
+
+  def db_connect_dqcc
+    ActiveRecord::Base.establish_connection(
+      :adapter  => DQCWconfig.db_dqcc_adapter,
+      :database => DQCWconfig.db_dqcc_name,
+      :username => DQCWconfig.db_dqcc_user,
+      :password => DQCWconfig.db_dqcc_pw,
+      :host     => DQCWconfig.db_dqcc_host)
+  end
+
+
+  def db_connect_dqor
+    ActiveRecord::Base.establish_connection(
+      :adapter  => DQCWconfig.db_dqor_adapter,
+      :database => DQCWconfig.db_dqor_name,
+      :username => DQCWconfig.db_dqor_user,
+      :password => DQCWconfig.db_dqor_pw,
+      :host     => DQCWconfig.db_dqor_host)
+  end
+
+
+  def db_connect_dqor_test
+    ActiveRecord::Base.establish_connection(:adapter => 'sqlite3', :database => '../test.sqlite3')
+  end
+
+
   def fetch_job_list
-    # foo
-    return []
+    #db_connect_dqor
+    db_connect_dqor_test
+    ActiveRecord::Base.logger = Logger.new(STDERR)
+
+    return Job.find(:all)
   end
 
 
   def fetch_user_data(job_id)
-    # foo
-    return []
+    #db_connect_dqor
+    db_connect_dqor_test
+    ActiveRecord::Base.logger = Logger.new(STDERR)
+
+    job = Job.find(job_id)
+
+    return Profile.find(job.profile_id)
   end
 
 
   def find_render_session(user_hash)
-    # foo
+    #db_connect_dqcc
+    #ActiveRecord::Base.logger = Logger.new(STDERR)
+    #
+    #return Rendersession.find_by_hash(user_hash)
     return nil
   end
 
