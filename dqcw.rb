@@ -65,7 +65,7 @@ while 1
 
     # job deosn't belog to a session
     else
-      puts "* Job \""+job.name+"\" doesn't belong to any session!"
+      puts "* Job \""+job.id.to_s+"\" doesn't belong to any session!"
     end
 
   end
