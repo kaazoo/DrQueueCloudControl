@@ -8,6 +8,10 @@ module DQCWconfig
   attr :parking_pool
   @parking_pool = "garage"
 
+  # maximum parking time
+  attr :park_time
+  @park_time = 600
+
   # available render pool types
   attr :pool_types
   @pool_types = ['blender', 'maya', 'cinema4d']
