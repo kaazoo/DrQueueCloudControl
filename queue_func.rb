@@ -1,14 +1,14 @@
 module DQCWqueue
-  
+
+  require 'drqueue'
+
   # config
   require 'config'
   include DQCWconfig
-  
-  require 'drqueue'
-  
+
+  # cloud functionality
   require 'cloud_func'
   include DQCWcloud
-
 
   # free slaves
   attr :free_slaves
