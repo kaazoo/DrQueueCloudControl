@@ -1,4 +1,4 @@
-module DQCWcloud
+module DQCCcloud
 
   def start_vm
     # foo

@@ -1,10 +1,10 @@
-module DQCWdb
+module DQCCdb
 
   require 'active_record'
 
   # config
   require 'config'
-  include DQCWconfig
+  include DQCCconfig
 
 
   class Job < ActiveRecord::Base
@@ -19,23 +19,13 @@ module DQCWdb
   end
 
 
-  def db_connect_dqcc
-    ActiveRecord::Base.establish_connection(
-      :adapter  => DQCWconfig.db_dqcc_adapter,
-      :database => DQCWconfig.db_dqcc_name,
-      :username => DQCWconfig.db_dqcc_user,
-      :password => DQCWconfig.db_dqcc_pw,
-      :host     => DQCWconfig.db_dqcc_host)
-  end
-
-
   def db_connect_dqor
     ActiveRecord::Base.establish_connection(
-      :adapter  => DQCWconfig.db_dqor_adapter,
-      :database => DQCWconfig.db_dqor_name,
-      :username => DQCWconfig.db_dqor_user,
-      :password => DQCWconfig.db_dqor_pw,
-      :host     => DQCWconfig.db_dqor_host)
+      :adapter  => DQCCconfig.db_dqor_adapter,
+      :database => DQCCconfig.db_dqor_name,
+      :username => DQCCconfig.db_dqor_user,
+      :password => DQCCconfig.db_dqor_pw,
+      :host     => DQCCconfig.db_dqor_host)
   end
 
 
@@ -65,7 +55,7 @@ module DQCWdb
 
 
   def find_render_session(user_hash)
-    #db_connect_dqcc
+    #db_connect_dqor
     #ActiveRecord::Base.logger = Logger.new(STDERR)
     #
     #return Rendersession.find_by_hash(user_hash)

@@ -1,14 +1,14 @@
-module DQCWqueue
+module DQCCqueue
 
   require 'drqueue'
 
   # config
   require 'config'
-  include DQCWconfig
+  include DQCCconfig
 
   # cloud functionality
   require 'cloud_func'
-  include DQCWcloud
+  include DQCCcloud
 
   # free slaves
   attr :parked_slaves
@@ -74,7 +74,7 @@ module DQCWqueue
     park_list = []
     slave_list = fetch_slave_list
     slave_list.each do |computer|
-      if computer.limits.pool == DQCWconfig.parking_pool
+      if computer.limits.pool == DQCCconfig.parking_pool
         park_list << computer
       end
     end
@@ -123,7 +123,7 @@ module DQCWqueue
 
   def concat_pool_names(user_hash)
     pool_string = ""
-    DQCWconfig.pool_types.each do |type|
+    DQCCconfig.pool_types.each do |type|
       pool_string += user_hash+"_"+type+", "
     end
 
@@ -149,7 +149,7 @@ module DQCWqueue
     # if no free slave is running, start new one
     else
       # start up new slave VM
-      slave = DQCWcloud.start_vm
+      slave = DQCCcloud.start_vm
       # add to pools
       set_slave_pool(slave, concat_pool_names(user_hash))
     end
@@ -161,7 +161,7 @@ module DQCWqueue
     if (user_slaves = get_user_slaves(user_hash)).length > 0
       0.upto(diff - 1) do |i|
         # add slaves to parking pool
-        set_slave_pool(user_slaves[i], DQCWconfig.parking_pool)
+        set_slave_pool(user_slaves[i], DQCCconfig.parking_pool)
         # save parking time
         @parked_slaves << [:name => user_slaves[i].name, :parked_at => Time.now.to_i]
       end
@@ -175,12 +175,12 @@ module DQCWqueue
   def shutdown_old_slaves
     @parked_slaves.each do |slave|
       # search for old entries
-      if (Time.now.to_i - DQCWconfig.park_time) > slave.parked_at
+      if (Time.now.to_i - DQCCconfig.park_time) > slave.parked_at
         puts slave.name
         # remove from park list
         @parked_slaves.delete(slave)
         # stop slave VM
-        DQCWcloud.stop_vm
+        DQCCcloud.stop_vm
       end
     end
   end
