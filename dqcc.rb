@@ -43,6 +43,7 @@ while 1
       else
         session.time_passed = Time.now.to_i - session.start_timestamp
       end
+      session.save
 
       # look if there is time left
       if (time_left = session.run_time - session.time_passed) > 0
