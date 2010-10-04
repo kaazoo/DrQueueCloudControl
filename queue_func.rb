@@ -16,6 +16,8 @@ module DQCCqueue
 
 
   def fetch_queue_info(queue_id)
+    puts "DEBUG: fetch_queue_info("+queue_id.to_s+")"
+
     found = 0
     # new job object
     ret_job = Drqueue::Job.new
@@ -31,7 +33,9 @@ module DQCCqueue
   end
 
 
-  def fetch_slave_list  
+  def fetch_slave_list
+    puts "DEBUG: fetch_slave_list()"
+
     # new array
     cl = []
 
@@ -56,6 +60,8 @@ module DQCCqueue
 
 
   def check_slaves(user_hash)
+    puts "DEBUG: check_slaves("+user_hash.to_s+")"
+
     # walk through list and look for hash in pool name
     counter = 0
     list = fetch_slave_list
@@ -70,6 +76,8 @@ module DQCCqueue
 
 
   def get_parked_slaves
+    puts "DEBUG: get_parked_slaves()"
+
     # walk through list and look for parking pool
     park_list = []
     slave_list = fetch_slave_list
@@ -84,6 +92,8 @@ module DQCCqueue
 
 
   def get_user_slaves(user_hash)
+    puts "DEBUG: get_user_slaves("+hash_hash.to_s+")"
+
     # walk through list and look for hash in pool name
     user_list = []
     slave_list = fetch_slave_list
@@ -98,6 +108,8 @@ module DQCCqueue
 
 
   def set_slave_pool(slave_name, pool)
+    puts "DEBUG: set_slave_pool("+slave_name.to_s+", "+pool.to_s+")"
+
     success = false
 
     # new array
@@ -122,6 +134,8 @@ module DQCCqueue
 
 
   def concat_pool_names(user_hash)
+    puts "DEBUG: concat_pool_names("+user_hash.to_s+")"
+
     pool_string = ""
     DQCCconfig.pool_types.each do |type|
       pool_string += user_hash+"_"+type+", "
@@ -132,6 +146,8 @@ module DQCCqueue
 
 
   def add_slaves(user_hash, diff)
+    puts "DEBUG: add_slaves("+user_hash.to_s+", "+diff.to_s+")"
+
     # look for unused slaves and add them to user pool(s)
     if (parked_slaves = get_parked_slaves).length > 0
       # work on a number of parked slaves
@@ -157,6 +173,8 @@ module DQCCqueue
 
 
   def remove_slaves(user_hash, diff)
+  puts "DEBUG: remove_slaves("+user_hash.to_s+", "+diff.to_s+")"
+
     # work on a number of parked slaves
     if (user_slaves = get_user_slaves(user_hash)).length > 0
       0.upto(diff - 1) do |i|
@@ -173,6 +191,8 @@ module DQCCqueue
 
 
   def shutdown_old_slaves
+    puts "DEBUG: shutdown_old_slaves()"
+
     @parked_slaves.each do |slave|
       # search for old entries
       if (Time.now.to_i - DQCCconfig.park_time) > slave.parked_at
@@ -180,7 +200,7 @@ module DQCCqueue
         # remove from park list
         @parked_slaves.delete(slave)
         # stop slave VM
-        DQCCcloud.stop_vm
+        DQCCcloud.stop_vm(slave)
       end
     end
   end
