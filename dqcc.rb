@@ -19,7 +19,9 @@ include DQCCdb
 require 'queue_func'
 include DQCCqueue
 
-require 'MD5'
+# for hash computation
+require 'digest/md5'
+
 
 while 1
   puts "* waiting a while"
@@ -32,7 +34,7 @@ while 1
     # get needed info
     queue_info = DQCCqueue.fetch_queue_info(job.queue_id)
     user_data = DQCCdb.fetch_user_data(job.id)
-    user_hash = MD5.md5(user_data.ldap_account)
+    user_hash = Digest::MD5.hexdigest(user_data.ldap_account)
 
     # look if job belongs to a session
     if (session = DQCCdb.find_render_session(user_hash)) != nil
