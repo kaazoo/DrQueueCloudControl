@@ -1,0 +1,7 @@
+#!/bin/bash
+echo HN > /etc/hostname
+echo "127.0.0.1 HN" >> /etc/hosts
+hostname -F /etc/hostname
+cd /etc/openvpn
+wget HN.tgz
+tar xzf HN.tgz
