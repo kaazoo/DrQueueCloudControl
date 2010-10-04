@@ -92,7 +92,7 @@ module DQCCqueue
 
 
   def get_user_slaves(user_hash)
-    puts "DEBUG: get_user_slaves("+hash_hash.to_s+")"
+    puts "DEBUG: get_user_slaves("+user_hash.to_s+")"
 
     # walk through list and look for hash in pool name
     user_list = []
@@ -164,10 +164,12 @@ module DQCCqueue
       end
     # if no free slave is running, start new one
     else
-      # start up new slave VM
-      slave = DQCCcloud.start_vm
-      # add to pools
-      set_slave_pool(slave, concat_pool_names(user_hash))
+      0.upto(diff - 1) do |i|
+        # start up new slave VM
+        slave = DQCCcloud.start_vm
+        # add to pools
+        set_slave_pool(slave, concat_pool_names(user_hash))
+      end
     end
   end
 
