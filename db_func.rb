@@ -6,6 +6,9 @@ module DQCCdb
   require 'config'
   include DQCCconfig
 
+  # for hash computation
+  require 'digest/md5'
+
 
   class Job < ActiveRecord::Base
     belongs_to :profile
@@ -13,9 +16,16 @@ module DQCCdb
 
   class Profile < ActiveRecord::Base
     has_many :jobs
+    has_many :payments
+  end
+
+  class Payment < ActiveRecord::Base
+    has_many :rendersessions
+    belongs_to :profile
   end
 
   class Rendersession < ActiveRecord::Base
+    belongs_to :payment
   end
 
 
@@ -30,7 +40,7 @@ module DQCCdb
 
 
   def db_connect_dqor_test
-    ActiveRecord::Base.establish_connection(:adapter => 'sqlite3', :database => '../test.sqlite3')
+    ActiveRecord::Base.establish_connection(:adapter => 'sqlite3', :database => '../DrQueueOnRails/db/DrQueueOnRails_development.sqlite3')
   end
 
 
@@ -56,10 +66,36 @@ module DQCCdb
 
   def find_render_session(user_hash)
     #db_connect_dqor
-    #ActiveRecord::Base.logger = Logger.new(STDERR)
-    #
-    #return Rendersession.find_by_hash(user_hash)
-    return nil
+    db_connect_dqor_test
+    ActiveRecord::Base.logger = Logger.new(STDERR)
+
+    puts user_hash
+    needed_pm = nil
+
+    payments = Payment.find(:all)
+    payments.each do |pm|
+      profile = Profile.find(pm.profile_id)
+      profile_hash = Digest::MD5.hexdigest(profile.ldap_account)
+      if profile_hash == user_hash
+        needed_pm = pm.id
+        break
+      end
+    end
+
+    active_rs = nil
+    Rendersession.find_all_by_payment_id(needed_pm).each do |rs|
+      puts rs.run_time
+      puts rs.start_timestamp
+      puts rs.time_passed
+      # check if there is time left
+      if rs.time_passed < (rs.run_time * 3600 + rs.start_timestamp)
+        # return only one session
+        active_rs = rs
+        break
+      end
+    end
+
+    return active_rs
   end
 
 
