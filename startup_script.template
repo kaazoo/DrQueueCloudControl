@@ -2,6 +2,15 @@
 echo HN > /etc/hostname
 echo "127.0.0.1 HN" >> /etc/hosts
 hostname -F /etc/hostname
+
 cd /etc/openvpn
 wget HN.tgz
 tar xzf HN.tgz
+/etc/init.d/openvpn start
+
+sleep 5
+
+export DRQUEUE_ROOT="/usr/local/drqueue"
+export DRQUEUE_MASTER="DRQMSTR"
+export PATH=$PATH:$DRQUEUE_ROOT/bin
+slave.Linux.x86_64 &
