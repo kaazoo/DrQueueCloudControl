@@ -15,6 +15,19 @@ module DQCCqueue
   @parked_slaves = []
 
 
+  class SlaveVM
+    attr_accessor :instace_id, :hostname, :public_name, :queue_info, :state
+
+    def initialize(instace_id)
+      @instace_id = instace_id
+      @hostname = nil
+      @public_name = nil
+      @queue_info = nil
+      @state = "running"
+    end
+  end
+
+
   def fetch_queue_info(queue_id)
     puts "DEBUG: fetch_queue_info("+queue_id.to_s+")"
 
@@ -80,10 +93,16 @@ module DQCCqueue
 
     # walk through list and look for parking pool
     park_list = []
-    slave_list = fetch_slave_list
-    slave_list.each do |computer|
-      if computer.limits.pool == DQCCconfig.parking_pool
-        park_list << computer
+    #slave_list = fetch_slave_list
+    #slave_list.each do |computer|
+    #  if computer.limits.pool == DQCCconfig.parking_pool
+    #    park_list << computer
+    #  end
+    #end
+
+    $slave_vms.each do |vm|
+      if (vm.queue_info != nil) && (vm.queue_info.limits.pool == DQCCconfig.parking_pool)
+        park_list << vm
       end
     end
 
@@ -98,7 +117,7 @@ module DQCCqueue
     user_list = []
     slave_list = fetch_slave_list
     slave_list.each do |computer|
-      if computer.limits.pool.include? user_hash
+      if computer.limits.pool.to_s.include? user_hash
         user_list << computer
       end
     end
@@ -107,8 +126,26 @@ module DQCCqueue
   end
 
 
+  def get_slave_info(address)
+    puts "DEBUG: get_slave_info("+address.to_s+")"
+
+    slave_info = nil
+
+    slave_list = fetch_slave_list
+    slave_list.each do |computer|
+      if computer.hwinfo.address == address
+        slave_info = computer
+        break
+      end
+    end
+    slave_list = ""
+
+    return slave_info
+  end
+
+
   def set_slave_pool(slave_name, pool)
-    puts "DEBUG: set_slave_pool("+slave_name.to_s+", "+pool.to_s+")"
+    puts "DEBUG: set_slave_pool("+slave_name.to_s+", \""+pool.to_s+"\")"
 
     success = false
 
@@ -120,7 +157,7 @@ module DQCCqueue
 
       # get computer data / 0 means error
       if Drqueue::request_comp_xfer(i, cl[i], Drqueue::CLIENT) == 1
-        if cl[i].name == slave_name
+        if cl[i].hwinfo.name == slave_name
           Drqueue::request_job_limits_pool_set(i, pool, Drqueue::CLIENT)
           success = true
           break
@@ -153,22 +190,33 @@ module DQCCqueue
       # work on a number of parked slaves
       0.upto(diff - 1) do |i|
         # add to user pool(s)
-        set_slave_pool(parked_slaves[i], concat_pool_names(user_hash))
+        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.name+"\" to pools \""+concat_pool_names(user_hash)+"\"."
+        set_slave_pool(parked_slaves[i].queue_info.name, concat_pool_names(user_hash))
         # take out of park list
-        @parked_slaves.each do |slave|
-          if slave.name == parked_slaves[i].name
-            puts slave.name
-            @parked_slaves.delete(slave)
-          end
-        end
+        #@parked_slaves.each do |slave|
+        #  if slave.name == parked_slaves[i].name
+        #    puts slave.name
+        #    @parked_slaves.delete(slave)
+        #  end
+        #end
       end
     # if no free slave is running, start new one
     else
       0.upto(diff - 1) do |i|
         # start up new slave VM
         slave = DQCCcloud.start_vm
+        
+        # sleep until VM is available
+        puts "DEBUG: Waiting for slave to arrive..."
+        sleep 25
+        
         # add to pools
-        set_slave_pool(slave, concat_pool_names(user_hash))
+        puts "INFO: I will add slave \""+slave.hostname+"\" to pools \""+concat_pool_names(user_hash)+"\"."
+        if set_slave_pool(slave.hostname, concat_pool_names(user_hash))
+          puts "DEBUG: pools set."
+        else
+          puts "DEBUG: pools not set!"
+        end
       end
     end
   end
