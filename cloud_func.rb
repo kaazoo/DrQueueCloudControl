@@ -10,6 +10,7 @@ module DQCCcloud
   require 'base64'
 
 
+  # create slave VM instance
   def start_vm
     puts "DEBUG: start_vm()"
 
@@ -23,13 +24,19 @@ module DQCCcloud
     # start new instance
     instance_data = ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => ENV['EC2_INSTANCE_TYPE'], :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
 
-    # get instance id
-    slave = instance_data.instancesSet.item[0].instanceId
+    # keep VM info
+    slave = SlaveVM.new(instance_data.instancesSet.item[0].instanceId)
+    puts slave.hostname = hostname
+    puts slave.public_name = instance_data.instancesSet.item[0].dnsName
+
+    # append slave VM to list of running VMs
+    $slave_vms << slave
 
     return slave
   end
 
 
+  # terminate a running slave VM
   def stop_vm(slave)
     puts "DEBUG: stop_vm()"
 
@@ -43,9 +50,39 @@ module DQCCcloud
   end
 
 
+  # apply changes to startup script and convert to base64
   def prepare_user_data(hostname)
-    script_body = `sed 's/HN/slave-c06a4ce89b11b08dafcce98ee965745c/g' startup_script.template`
-    return Base64.b64encode(script_body)
+    puts "DEBUG: prepare_user_data("+hostname+")"
+
+    master = ENV['DRQUEUE_MASTER_FOR_VMS']
+    script_body = `sed 's/HN/#{hostname}/g' startup_script.template | sed 's/DRQMSTR/#{master}/g'`
+    encoded_body = Base64.b64encode(script_body)
+    return encoded_body
   end
+
+
+  # fetch list of running slave VMs
+  def get_slave_vms
+    puts "DEBUG: get_slave_vms()"
+
+    registered_vms = []
+    i = 0
+
+    # connect to EC2
+    ec2 = AWS::EC2::Base.new(:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY'])
+
+    # walk through all registered VMs
+    ec2.describe_instances.reservationSet.item.each do |res|
+      res.instancesSet.item.each do |instance|
+        puts instance.instanceId
+        registered_vms[i] = SlaveVM.new(instance.instanceId)
+        puts registered_vms[i].state = instance.instanceState.name
+        puts registered_vms[i].queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+      end
+    end
+
+    return registered_vms
+  end
+
 
 end
