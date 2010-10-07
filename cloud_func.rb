@@ -11,15 +11,15 @@ module DQCCcloud
 
 
   # create slave VM instance
-  def start_vm
-    puts "DEBUG: start_vm()"
+  def start_vm(pool_list)
+    puts "DEBUG: start_vm("+pool_list.to_s+")"
 
     # connect to EC2
     ec2 = AWS::EC2::Base.new(:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY'])
 
     # generate provisioning data
     hostname = 'slave-'+Digest::MD5.hexdigest(rand.to_s)
-    user_data = prepare_user_data(hostname)
+    user_data = prepare_user_data(hostname, pool_list)
 
     # start new instance
     instance_data = ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => ENV['EC2_INSTANCE_TYPE'], :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
@@ -38,7 +38,7 @@ module DQCCcloud
 
   # terminate a running slave VM
   def stop_vm(slave)
-    puts "DEBUG: stop_vm()"
+    puts "DEBUG: stop_vm("+slave.to_s+")"
 
     # connect to EC2
     ec2 = AWS::EC2::Base.new(:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY'])
@@ -51,13 +51,17 @@ module DQCCcloud
 
 
   # apply changes to startup script and convert to base64
-  def prepare_user_data(hostname)
-    puts "DEBUG: prepare_user_data("+hostname+")"
+  def prepare_user_data(hostname, pool_list)
+    puts "DEBUG: prepare_user_data("+hostname+", \""+pool_list+"\")"
 
     master = ENV['DRQUEUE_MASTER_FOR_VMS']
-    script_body = `sed 's/HN/#{hostname}/g' startup_script.template | sed 's/DRQMSTR/#{master}/g'`
-    encoded_body = Base64.b64encode(script_body)
-    return encoded_body
+    if pool_list != nil
+      script_body = `sed 's/HN/#{hostname}/g' startup_script.template | sed 's/DRQMSTR/#{master}/g' | sed 's/DRQPL/#{pool_list}/g'`
+    else
+      script_body = `sed 's/HN/#{hostname}/g' startup_script.template | sed 's/DRQMSTR/#{master}/g'`
+    end
+
+    return Base64.b64encode(script_body)
   end
 
 
@@ -74,10 +78,9 @@ module DQCCcloud
     # walk through all registered VMs
     ec2.describe_instances.reservationSet.item.each do |res|
       res.instancesSet.item.each do |instance|
-        puts instance.instanceId
         registered_vms[i] = SlaveVM.new(instance.instanceId)
-        puts registered_vms[i].state = instance.instanceState.name
-        puts registered_vms[i].queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+        registered_vms[i].state = instance.instanceState.name
+        registered_vms[i].queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
       end
     end
 
