@@ -1,16 +1,26 @@
 #!/bin/bash
+
+# set hostname
 echo HN > /etc/hostname
 echo "127.0.0.1 HN" >> /etc/hosts
 hostname -F /etc/hostname
 
-cd /etc/openvpn
-wget HN.tgz
-tar xzf HN.tgz
-/etc/init.d/openvpn start
+# deploy VPN setup
+#cd /etc/openvpn
+#wget HN.tgz
+#tar xzf HN.tgz
+#/etc/init.d/openvpn start
+
+# mount shared storage
+#mount -t cifs //10.1.8.1/tmp /usr/local/drqueue/tmp
+#mount -t cifs //10.1.8.1/logs /usr/local/drqueue/logs
 
 sleep 5
 
+# startup DrQueue
 export DRQUEUE_ROOT="/usr/local/drqueue"
 export DRQUEUE_MASTER="DRQMSTR"
+export DRQUEUE_POOL="DRQPL"
 export PATH=$PATH:$DRQUEUE_ROOT/bin
+#su -c "slave.Linux.x86_64 &" drqueue
 slave.Linux.x86_64 &
