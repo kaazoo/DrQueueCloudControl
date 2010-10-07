@@ -1,10 +1,11 @@
 module DQCCdb
 
-  require 'active_record'
-
   # config
   require 'config'
   include DQCCconfig
+
+  # for database connectivity
+  require 'active_record'
 
   # for hash computation
   require 'digest/md5'

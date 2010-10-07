@@ -1,7 +1,5 @@
 module DQCCqueue
 
-  require 'drqueue'
-
   # config
   require 'config'
   include DQCCconfig
@@ -9,6 +7,9 @@ module DQCCqueue
   # cloud functionality
   require 'cloud_func'
   include DQCCcloud
+
+  # for DrQueue control
+  require 'drqueue'
 
   # free slaves
   attr :parked_slaves
