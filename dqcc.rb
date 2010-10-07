@@ -27,7 +27,8 @@ while 1
   puts "* waiting a while"
   sleep DQCCconfig.sleep_interval
 
-  # seek for running slaves
+  # fetch running slaves, registered in DrQueue and EC2
+  $slave_list = DQCCqueue.fetch_slave_list
   $slave_vms = DQCCcloud.get_slave_vms
 
   # cycle through all DQOR database jobs
@@ -62,9 +63,9 @@ while 1
           # add slaves
           DQCCqueue.add_slaves(user_hash, diff)
         elsif diff < 0
-          puts "INFO: I have to remove "+diff.to_s+"  slaves from session "+session.id.to_s+"."
+          puts "INFO: I have to remove "+diff.abs.to_s+" slaves from session "+session.id.to_s+"."
           # remove slaves because there are more then defined
-          DQCCqueue.remove_slaves(user_hash, diff)
+          DQCCqueue.remove_slaves(user_hash, diff.abs)
         else
           puts "INFO: I don't have to do anything for this job."
         end
