@@ -45,18 +45,22 @@ module DQCCdb
 
 
   def fetch_job_list
+    puts "DEBUG: fetch_job_list()"
+
     #db_connect_dqor
     db_connect_dqor_test
-    ActiveRecord::Base.logger = Logger.new(STDERR)
+    #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     return Job.find(:all)
   end
 
 
   def fetch_user_data(job_id)
+    puts "DEBUG: fetch_user_data("+job_id.to_s+")"
+
     #db_connect_dqor
     db_connect_dqor_test
-    ActiveRecord::Base.logger = Logger.new(STDERR)
+    #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     job = Job.find(job_id)
 
@@ -65,13 +69,13 @@ module DQCCdb
 
 
   def find_render_session(user_hash)
+    puts "DEBUG: find_render_session("+user_hash+")"
+
     #db_connect_dqor
     db_connect_dqor_test
-    ActiveRecord::Base.logger = Logger.new(STDERR)
+    #ActiveRecord::Base.logger = Logger.new(STDERR)
 
-    puts user_hash
     needed_pm = nil
-
     payments = Payment.find(:all)
     payments.each do |pm|
       profile = Profile.find(pm.profile_id)
@@ -84,9 +88,6 @@ module DQCCdb
 
     active_rs = nil
     Rendersession.find_all_by_payment_id(needed_pm).each do |rs|
-      puts rs.run_time
-      puts rs.start_timestamp
-      puts rs.time_passed
       # check if there is time left
       if rs.time_passed < (rs.run_time * 3600 + rs.start_timestamp)
         # return only one session
