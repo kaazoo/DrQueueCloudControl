@@ -47,10 +47,13 @@ while 1
       # update time counter
       if session.time_passed == 0
         session.start_timestamp = Time.now.to_i
+        session.time_passed = 1
+        puts "INFO: Session starts now."
       else
         session.time_passed = Time.now.to_i - session.start_timestamp
+        puts "INFO: Time passed in this session: "+session.time_passed.to_s+" sec."
       end
-      session.save
+      session.save!
 
       # look if there is time left
       if (time_left = session.run_time - session.time_passed) > 0
