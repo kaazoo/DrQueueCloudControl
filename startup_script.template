@@ -6,14 +6,14 @@ echo "127.0.0.1 REPL_HOSTNAME" >> /etc/hosts
 hostname -F /etc/hostname
 
 # deploy VPN setup
-#cd /etc/openvpn
-#wget REPL_HOSTNAME.tgz
-#tar xzf REPL_HOSTNAME.tgz
-#/etc/init.d/openvpn start
+cd /etc/openvpn
+wget http://REPL_DL_SERVER:1194/REPL_HOSTNAME.tgz
+tar xzf REPL_HOSTNAME.tgz
+/etc/init.d/openvpn restart
 
 # mount shared storage
-#mount -t cifs //10.1.8.1/tmp /usr/local/drqueue/tmp
-#mount -t cifs //10.1.8.1/logs /usr/local/drqueue/logs
+mount -t cifs //10.1.0.1/tmp /usr/local/drqueue/tmp
+mount -t cifs //10.1.0.1/logs /usr/local/drqueue/logs
 
 sleep 5
 
@@ -22,5 +22,4 @@ export DRQUEUE_ROOT="/usr/local/drqueue"
 export DRQUEUE_MASTER="REPL_MASTER"
 export DRQUEUE_POOL="REPL_POOL"
 export PATH=$PATH:$DRQUEUE_ROOT/bin
-#su -c "slave.Linux.x86_64 &" drqueue
-slave.Linux.x86_64 &
+su -c "slave.Linux.x86_64 &" drqueue
