@@ -27,9 +27,8 @@ module DQCCcloud
     # keep VM info
     slave = SlaveVM.new(instance_data.instancesSet.item[0].instanceId)
     puts slave.hostname = hostname
-    puts slave.public_name = instance_data.instancesSet.item[0].dnsName
 
-    # append slave VM to list of running VMs
+    # append slave VM to list of known VMs
     $slave_vms << slave
 
     return slave
@@ -56,9 +55,9 @@ module DQCCcloud
 
     master = ENV['DRQUEUE_MASTER_FOR_VMS']
     if pool_list != nil
-      script_body = `sed 's/HN/#{hostname}/g' startup_script.template | sed 's/DRQMSTR/#{master}/g' | sed 's/DRQPL/#{pool_list}/g'`
+      script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_POOL/#{pool_list}/g'`
     else
-      script_body = `sed 's/HN/#{hostname}/g' startup_script.template | sed 's/DRQMSTR/#{master}/g'`
+      script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g'`
     end
 
     return Base64.b64encode(script_body)
@@ -78,9 +77,14 @@ module DQCCcloud
     # walk through all registered VMs
     ec2.describe_instances.reservationSet.item.each do |res|
       res.instancesSet.item.each do |instance|
-        registered_vms[i] = SlaveVM.new(instance.instanceId)
-        registered_vms[i].state = instance.instanceState.name
-        registered_vms[i].queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+        # we are not interested in terminated/stopping and non-slave VMs
+        if (["running", "pending"].include?(instance.instanceState.name)) && (instance.imageId == ENV['EC2_SLAVE_AMI'])
+          registered_vms[i] = SlaveVM.new(instance.instanceId)
+          registered_vms[i].state = instance.instanceState.name
+          registered_vms[i].queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+        else
+          puts "INFO: VM "+instance.instanceId+" is not useable."
+        end
       end
     end
 
