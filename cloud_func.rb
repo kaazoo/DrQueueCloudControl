@@ -9,6 +9,9 @@ module DQCCcloud
   # for Base64 encodig
   require 'base64'
 
+  # for ip lookup
+  require 'socket'
+
 
   # create slave VM instance
   def start_vm(pool_list)
@@ -20,6 +23,7 @@ module DQCCcloud
     # generate provisioning data
     hostname = 'slave-'+Digest::MD5.hexdigest(rand.to_s)
     user_data = prepare_user_data(hostname, pool_list)
+    prepare_vpn_cert(hostname)
 
     # start new instance
     instance_data = ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => ENV['EC2_INSTANCE_TYPE'], :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
@@ -54,10 +58,12 @@ module DQCCcloud
     puts "DEBUG: prepare_user_data("+hostname+", \""+pool_list+"\")"
 
     master = ENV['DRQUEUE_MASTER_FOR_VMS']
+    dowonload_ip = local_ip
+
     if pool_list != nil
-      script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_POOL/#{pool_list}/g'`
+      script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g'`
     else
-      script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g'`
+      script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g'`
     end
 
     return Base64.b64encode(script_body)
@@ -79,6 +85,7 @@ module DQCCcloud
       res.instancesSet.item.each do |instance|
         # we are not interested in terminated/stopping and non-slave VMs
         if (["running", "pending"].include?(instance.instanceState.name)) && (instance.imageId == ENV['EC2_SLAVE_AMI'])
+          ### TODO: update old entries instead of overwriting them all
           registered_vms[i] = SlaveVM.new(instance.instanceId)
           registered_vms[i].state = instance.instanceState.name
           registered_vms[i].queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
@@ -89,6 +96,25 @@ module DQCCcloud
     end
 
     return registered_vms
+  end
+
+
+  # find out local ip address
+  def local_ip
+    orig, Socket.do_not_reverse_lookup = Socket.do_not_reverse_lookup, true  # turn off reverse DNS resolution temporarily
+
+    UDPSocket.open do |s|
+      s.connect '64.233.187.99', 1
+      s.addr.last
+    end
+  ensure
+    Socket.do_not_reverse_lookup = orig
+  end
+
+
+  # create a special vpn certificate for slave
+  def prepare_vpn_cert(hostname)
+    `generate_vpn_client_cert.sh #{hostname}`
   end
 
 
