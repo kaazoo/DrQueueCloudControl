@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [$1 -eq ""]; then
+if [ "$1" == "" ]; then
   echo "specify client hostname"
   exit 1
 fi
