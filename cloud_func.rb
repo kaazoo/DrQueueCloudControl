@@ -114,7 +114,7 @@ module DQCCcloud
 
   # create a special vpn certificate for slave
   def prepare_vpn_cert(hostname)
-    `generate_vpn_client_cert.sh #{hostname}`
+    `./generate_vpn_client_cert.sh #{hostname}`
   end
 
 
