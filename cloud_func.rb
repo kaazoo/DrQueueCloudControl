@@ -9,8 +9,9 @@ module DQCCcloud
   # for Base64 encodig
   require 'base64'
 
-  # for ip lookup
-  require 'socket'
+  # config
+  require 'config'
+  include DQCCconfig
 
 
   # create slave VM instance
@@ -58,7 +59,7 @@ module DQCCcloud
     puts "DEBUG: prepare_user_data("+hostname+", \""+pool_list+"\")"
 
     master = ENV['DRQUEUE_MASTER_FOR_VMS']
-    dowonload_ip = local_ip
+    dowonload_ip = DQCCconfig.local_ip
 
     if pool_list != nil
       script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g'`
@@ -96,19 +97,6 @@ module DQCCcloud
     end
 
     return registered_vms
-  end
-
-
-  # find out local ip address
-  def local_ip
-    orig, Socket.do_not_reverse_lookup = Socket.do_not_reverse_lookup, true  # turn off reverse DNS resolution temporarily
-
-    UDPSocket.open do |s|
-      s.connect '64.233.187.99', 1
-      s.addr.last
-    end
-  ensure
-    Socket.do_not_reverse_lookup = orig
   end
 
 
