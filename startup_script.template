@@ -4,6 +4,7 @@
 echo REPL_HOSTNAME > /etc/hostname
 echo "127.0.0.1 REPL_HOSTNAME" >> /etc/hosts
 hostname -F /etc/hostname
+export HOSTNAME=REPL_HOSTNAME
 
 # deploy VPN setup
 cd /etc/openvpn
@@ -12,14 +13,17 @@ tar xzf REPL_HOSTNAME.tgz
 /etc/init.d/openvpn restart
 
 # mount shared storage
-mount -t cifs //10.1.0.1/tmp /usr/local/drqueue/tmp
-mount -t cifs //10.1.0.1/logs /usr/local/drqueue/logs
+mount.cifs //10.1.0.1/tmp /usr/local/drqueue/tmp -o guest,rw
+mount.cifs //10.1.0.1/logs /usr/local/drqueue/logs -o guest,rw
 
 sleep 5
 
 # startup DrQueue
 export DRQUEUE_ROOT="/usr/local/drqueue"
-export DRQUEUE_MASTER="REPL_MASTER"
-export DRQUEUE_POOL="REPL_POOL"
-export PATH=$PATH:$DRQUEUE_ROOT/bin
-su -c "slave.Linux.x86_64 &" drqueue
+export DRQUEUE_MASTER=REPL_MASTER
+export DRQUEUE_POOL=REPL_POOL
+echo "export DRQUEUE_ROOT=\"$DRQUEUE_ROOT\"" >/home/drqueue/env
+echo "export DRQUEUE_MASTER=\"$DRQUEUE_MASTER\"" >>/home/drqueue/env
+echo "export DRQUEUE_POOL=\"$DRQUEUE_POOL\"" >>/home/drqueue/env
+chmod +x /home/drqueue/env
+su -c "cd && ./env && $DRQUEUE_ROOT/bin/slave.Linux.x86_64 &" drqueue
