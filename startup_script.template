@@ -13,8 +13,8 @@ tar xzf REPL_HOSTNAME.tgz
 /etc/init.d/openvpn restart
 
 # mount shared storage
-mount.cifs //10.1.0.1/tmp /usr/local/drqueue/tmp -o guest,rw
-mount.cifs //10.1.0.1/logs /usr/local/drqueue/logs -o guest,rw
+mount.cifs //10.1.0.1/tmp /usr/local/drqueue/tmp -o guest,rw,uid=drqueue
+mount.cifs //10.1.0.1/logs /usr/local/drqueue/logs -o guest,rw,uid=drqueue
 
 sleep 5
 
