@@ -48,8 +48,8 @@ module DQCCdb
   def fetch_job_list
     puts "DEBUG: fetch_job_list()"
 
-    #db_connect_dqor
-    db_connect_dqor_test
+    db_connect_dqor
+    #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     return Job.find(:all)
@@ -59,8 +59,8 @@ module DQCCdb
   def fetch_rendersession_list
     puts "DEBUG: fetch_rendersession_list()"
 
-    #db_connect_dqor
-    db_connect_dqor_test
+    db_connect_dqor
+    #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     return Rendersession.find(:all)
@@ -70,8 +70,8 @@ module DQCCdb
   def fetch_user_data(job_id)
     puts "DEBUG: fetch_user_data("+job_id.to_s+")"
 
-    #db_connect_dqor
-    db_connect_dqor_test
+    db_connect_dqor
+    #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     job = Job.find(job_id)
@@ -83,20 +83,23 @@ module DQCCdb
   def fetch_rendersession_job_list(rendersession_id)
     puts "DEBUG: fetch_rendersession_job_list("+rendersession_id.to_s+")"
 
+    db_connect_dqor
+    #db_connect_dqor_test
+    #ActiveRecord::Base.logger = Logger.new(STDERR)
+
     rs = Rendersession.find(rendersession_id)
     pm = Payment.find(rs.payment_id)
     prof = Profile.find(pm.profile_id)
-    jobs = Job.find_all_by_profile_id(prof.id)
 
-    return jobs
+    return Job.find_all_by_profile_id(prof.id)
   end
 
 
   def find_rendersession(user_hash)
     puts "DEBUG: find_rendersession("+user_hash+")"
 
-    #db_connect_dqor
-    db_connect_dqor_test
+    db_connect_dqor
+    #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     needed_pm = nil
