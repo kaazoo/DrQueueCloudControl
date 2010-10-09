@@ -24,7 +24,7 @@ module DQCCcloud
     # generate provisioning data
     hostname = 'slave-'+Digest::MD5.hexdigest(rand.to_s)
     user_data = prepare_user_data(hostname, pool_list)
-    prepare_vpn_cert(hostname)
+    prepare_vpn_cert(hostname, DQCCconfig.local_ip)
 
     # start new instance
     instance_data = ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => ENV['EC2_INSTANCE_TYPE'], :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
@@ -101,8 +101,9 @@ module DQCCcloud
 
 
   # create a special vpn certificate for slave
-  def prepare_vpn_cert(hostname)
-    `sudo ./generate_vpn_client_cert.sh #{hostname}`
+  def prepare_vpn_cert(hostname, server_ip)
+    ### TODO: check for valid values as this goes directly to a shell
+    `sudo ./generate_vpn_client_cert.sh #{hostname} #{server_ip}`
   end
 
 
