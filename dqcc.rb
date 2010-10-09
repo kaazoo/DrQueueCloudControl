@@ -41,7 +41,7 @@ while 1
     user_hash = Digest::MD5.hexdigest(user_data.ldap_account)
 
     # look if job belongs to a session
-    if (session = DQCCdb.find_render_session(user_hash)) != nil
+    if (session = DQCCdb.find_rendersession(user_hash)) != nil
       puts "INFO: Job \""+job.id.to_s+"\" belongs to session "+session.id.to_s+"!"
 
       # update time counter

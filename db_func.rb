@@ -56,6 +56,17 @@ module DQCCdb
   end
 
 
+  def fetch_rendersession_list
+    puts "DEBUG: fetch_rendersession_list()"
+
+    #db_connect_dqor
+    db_connect_dqor_test
+    #ActiveRecord::Base.logger = Logger.new(STDERR)
+
+    return Rendersession.find(:all)
+  end
+
+
   def fetch_user_data(job_id)
     puts "DEBUG: fetch_user_data("+job_id.to_s+")"
 
@@ -69,8 +80,20 @@ module DQCCdb
   end
 
 
-  def find_render_session(user_hash)
-    puts "DEBUG: find_render_session("+user_hash+")"
+  def fetch_rendersession_job_list(rendersession_id)
+    puts "DEBUG: fetch_rendersession_job_list("+rendersession_id.to_s+")"
+
+    rs = Rendersession.find(rendersession_id)
+    pm = Payment.find(rs.payment_id)
+    prof = Profile.find(pm.profile_id)
+    jobs = Job.find_all_by_profile_id(prof.id)
+
+    return jobs
+  end
+
+
+  def find_rendersession(user_hash)
+    puts "DEBUG: find_rendersession("+user_hash+")"
 
     #db_connect_dqor
     db_connect_dqor_test
