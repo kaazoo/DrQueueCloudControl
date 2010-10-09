@@ -31,42 +31,61 @@ while 1
   $slave_list = DQCCqueue.fetch_slave_list
   $slave_vms = DQCCcloud.get_slave_vms
 
-  # cycle through all DQOR database jobs
-  job_list = DQCCdb.fetch_job_list
-  job_list.each do |job|
+  # cycle through all DQOR rendersessions
+  rs_list = DQCCdb.fetch_rendersession_list
+  rs_list.each do |rs|
 
-    # get needed info
-    queue_info = DQCCqueue.fetch_queue_info(job.queue_id)
-    user_data = DQCCdb.fetch_user_data(job.id)
+    running_jobs = []
+
+    # fetch list of all belonging jobs
+    job_list = DQCCdb.fetch_rendersession_job_list(rs.id)
+    job_list.each do |job|
+      queue_info = DQCCqueue.fetch_queue_info(job.queue_id)
+      # see if there is any job active or waiting
+      if (queue_info.status == Drqueue::JOBSTATUS_ACTIVE) || (queue_info.status == Drqueue::JOBSTATUS_WAITING)
+        running_jobs << job
+      end
+    end
+
+    # get needed info about job owner
+    user_data = DQCCdb.fetch_user_data(job_list[0].id)
     user_hash = Digest::MD5.hexdigest(user_data.ldap_account)
 
-    # look if job belongs to a session
-    if (session = DQCCdb.find_rendersession(user_hash)) != nil
-      puts "INFO: Job \""+job.id.to_s+"\" belongs to session "+session.id.to_s+"!"
+    if running_jobs.length == 0
+      puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". I have to remove all slaves."
+      # remove all slaves
+      DQCCqueue.remove_slaves(user_hash, rs.num_slaves)
+      break
+    else
+      puts "INFO: There are "+running_jobs.length.to_s+" running jobs in rendersession "+rs.id.to_s+"."
+    end
+
+    #cycle through all running jobs
+    running_jobs.each do |job|
 
       # update time counter
-      if session.time_passed == 0
-        session.start_timestamp = Time.now.to_i
-        session.time_passed = 1
+      if rs.time_passed == 0
+        rs.start_timestamp = Time.now.to_i
+        rs.time_passed = 1
         puts "INFO: Session starts now."
       else
-        session.time_passed = Time.now.to_i - session.start_timestamp
-        puts "INFO: Time passed in this session: "+session.time_passed.to_s+" sec."
+        rs.time_passed = Time.now.to_i - rs.start_timestamp
+        puts "INFO: Time passed in this session: "+rs.time_passed.to_s+" sec."
       end
-      session.save!
+      rs.save!
 
       # look if there is time left
-      if (time_left = session.run_time - session.time_passed) > 0
-        puts "INFO: There is time left in session "+session.id.to_s+"."
+      if (time_left = rs.run_time - rs.time_passed) > 0
+        puts "INFO: There is time left in session "+rs.id.to_s+"."
         # check if slaves are running
         running_slaves = DQCCqueue.get_user_slaves(user_hash).length
-        diff = session.num_slaves - running_slaves
+        diff = rs.num_slaves - running_slaves
         if diff > 0
-          puts "INFO: I have to add "+diff.to_s+" more slaves to session "+session.id.to_s+"."
+          puts "INFO: I have to add "+diff.to_s+" more slaves to session "+rs.id.to_s+"."
           # add slaves
           DQCCqueue.add_slaves(user_hash, diff)
         elsif diff < 0
-          puts "INFO: I have to remove "+diff.abs.to_s+" slaves from session "+session.id.to_s+"."
+          puts "INFO: I have to remove "+diff.abs.to_s+" slaves from session "+rs.id.to_s+"."
           # remove slaves because there are more then defined
           DQCCqueue.remove_slaves(user_hash, diff.abs)
         else
@@ -74,16 +93,11 @@ while 1
         end
       # no time is left in the session
       else
-        puts "INFO: I have to remove all slaves from session "+session.id.to_s+"."
+        puts "INFO: I have to remove all slaves from session "+rs.id.to_s+"."
         # remove all slaves
-        DQCCqueue.remove_slaves(user_hash, session.num_slaves)
+        DQCCqueue.remove_slaves(user_hash, rs.num_slaves)
       end
-
-    # job deosn't belog to a session
-    else
-      puts "INFO: Job \""+job.id.to_s+"\" doesn't belong to any session!"
     end
-
   end
 
   # save resources
