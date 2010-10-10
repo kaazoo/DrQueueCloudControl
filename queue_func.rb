@@ -140,19 +140,25 @@ module DQCCqueue
   def set_slave_pool(slave, pool)
     puts "DEBUG: set_slave_pool("+slave.hwinfo.address.to_s+", \""+pool.to_s+"\")"
 
-    # remove from all pools
+    # save names of old pools
+    old_pools = []
     np_max = slave.limits.npools - 1
     (0..np_max).each do |np|
-      puts "DEBUG: removing "+slave.hwinfo.address+" from pool "+slave.limits.get_pool(np).name
-      if Drqueue::request_slave_limits_pool_remove(slave.hwinfo.address, slave.limits.get_pool(np).name, Drqueue::CLIENT) == 0
-        puts "ERROR: Could not remove slave from pool!"
-      end
+      old_pools << slave.limits.get_pool(np).name
     end
 
-    # add to specific pool
+    # add to specific new pool
     puts "DEBUG: adding "+slave.hwinfo.address+" to pool "+pool
     if Drqueue::request_slave_limits_pool_add(slave.hwinfo.address, pool, Drqueue::CLIENT) == 0
       puts "ERROR: Could not add slave to pool!"
+    end
+
+    # remove from old pools
+    old_pools.each do |pool|
+      puts "DEBUG: removing "+slave.hwinfo.address+" from pool "+pool
+      if Drqueue::request_slave_limits_pool_remove(slave.hwinfo.address, pool, Drqueue::CLIENT) == 0
+        puts "ERROR: Could not remove slave from pool!"
+      end
     end
 
     return true
