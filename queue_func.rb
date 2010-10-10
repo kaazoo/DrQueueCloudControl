@@ -11,13 +11,9 @@ module DQCCqueue
   # for DrQueue control
   require 'drqueue'
 
-  # free slaves
-  attr :parked_slaves
-  @parked_slaves = []
-
 
   class SlaveVM
-    attr_accessor :instace_id, :hostname, :public_name, :queue_info, :state
+    attr_accessor :instace_id, :hostname, :public_name, :queue_info, :state, :parked_at
 
     def initialize(instace_id)
       @instace_id = instace_id
@@ -25,6 +21,7 @@ module DQCCqueue
       @public_name = nil
       @queue_info = nil
       @state = "pending"
+      @parked_at = nil
     end
   end
 
@@ -218,7 +215,7 @@ module DQCCqueue
         # add slaves to parking pool
         set_slave_pool(user_slaves[i], DQCCconfig.parking_pool)
         # save parking time
-        #@parked_slaves << [:name => user_slaves[i].hwinfo.name, :parked_at => Time.now.to_i]
+        user_slaves[i].parked_at = Time.now.to_i
       end
     # no user slaves found
     else
@@ -230,12 +227,15 @@ module DQCCqueue
   def shutdown_old_slaves
     puts "DEBUG: shutdown_old_slaves()"
 
-    @parked_slaves.each do |slave|
+    parked_slaves = get_parked_slaves
+    parked_slaves.each do |slave|
+      if slave.parked_at == nil
+        puts "ERROR: Slave "+slave.instance_id+" has been parked but when isn't known."
+        break
+      end
       # search for old entries
       if (Time.now.to_i - DQCCconfig.park_time) > slave.parked_at
-        puts slave.name
-        # remove from park list
-        @parked_slaves.delete(slave)
+         puts "INFO: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+" and will be shut down now."
         # stop slave VM
         DQCCcloud.stop_vm(slave)
       end

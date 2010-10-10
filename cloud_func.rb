@@ -42,13 +42,13 @@ module DQCCcloud
 
   # terminate a running slave VM
   def stop_vm(slave)
-    puts "DEBUG: stop_vm("+slave.to_s+")"
+    puts "DEBUG: stop_vm("+slave.instance_id+")"
 
     # connect to EC2
     ec2 = AWS::EC2::Base.new(:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY'])
 
     # stop running instance
-    ec2.terminate_instances( {:instance_id => slave} )
+    ec2.terminate_instances( {:instance_id => slave.instance_id} )
 
     return true
   end
