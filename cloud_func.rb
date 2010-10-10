@@ -94,7 +94,7 @@ module DQCCcloud
           reg_vm = search_registered_vm_by_instance_id(instance.instanceId)
             if reg_vm != false
               # update existing entry
-              puts "DEBUG: VM "+instance.instanceId+" is known. Updating entry."
+              puts "INFO: VM "+instance.instanceId+" is known. Updating entry."
               reg_vm.public_dns = instance.dnsName
               reg_vm.private_dns = instance.privateDnsName
               reg_vm.private_ip = instance.privateIpAddress
@@ -102,7 +102,7 @@ module DQCCcloud
               reg_vm.state = instance.instanceState.name
             else
               # create new entry
-              puts "DEBUG: VM "+instance.instanceId+" is not known. Creating new entry."
+              puts "INFO: VM "+instance.instanceId+" is not known. Creating new entry."
               new_vm = SlaveVM.new(instance.instanceId)
               new_vm.public_dns = instance.dnsName
               new_vm.private_dns = instance.privateDnsName

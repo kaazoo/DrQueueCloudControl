@@ -238,12 +238,15 @@ module DQCCqueue
       if slave.parked_at == nil
         puts "ERROR: Slave "+slave.instance_id+" has been parked but when isn't known."
         break
-      end
-      # search for old entries
-      if (Time.now.to_i - DQCCconfig.park_time) > slave.parked_at
-         puts "INFO: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+" and will be shut down now."
-        # stop slave VM
-        DQCCcloud.stop_vm(slave)
+      else
+        # search for old entries
+        if (Time.now.to_i - DQCCconfig.park_time) > slave.parked_at
+           puts "INFO: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+" and will be shut down now."
+          # stop slave VM
+          DQCCcloud.stop_vm(slave)
+        else
+          puts "DEBUG: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+"."
+        end
       end
     end
   end
