@@ -41,9 +41,13 @@ while 1
     job_list = DQCCdb.fetch_rendersession_job_list(rs.id)
     job_list.each do |job|
       queue_info = DQCCqueue.fetch_queue_info(job.queue_id)
-      # see if there is any job active or waiting
-      if (queue_info.status == Drqueue::JOBSTATUS_ACTIVE) || (queue_info.status == Drqueue::JOBSTATUS_WAITING)
-        running_jobs << job
+      if queue_info == nil
+        puts "ERROR: Queue info for job "+job.id.to_s+" could not be fetched."
+      else
+        # see if there is any job active or waiting
+        if (queue_info.status == Drqueue::JOBSTATUS_ACTIVE) || (queue_info.status == Drqueue::JOBSTATUS_WAITING)
+          running_jobs << job
+        end
       end
     end
 
