@@ -76,7 +76,7 @@ module DQCCqueue
     park_list = []
 
     $slave_vms.each do |vm|
-      if (vm.queue_info != nil) && (vm.queue_info.limits.pool == DQCCconfig.parking_pool)
+      if (vm.queue_info != nil) && (computer_pools(vm.queue_info).include? DQCCconfig.parking_pool)
         park_list << vm
       end
     end
@@ -236,14 +236,19 @@ module DQCCqueue
     parked_slaves = get_parked_slaves
     parked_slaves.each do |slave|
       if slave.parked_at == nil
-        puts "ERROR: Slave "+slave.instance_id+" has been parked but when isn't known."
-        break
+        puts "ERROR: Slave "+slave.instance_id+" has been parked but when isn't known. Shutting down now."
+        # stop slave VM
+        DQCCcloud.stop_vm(slave)
+        # remove from global list
+        $slave_vms.delete(slave)
       else
         # search for old entries
         if (Time.now.to_i - DQCCconfig.park_time) > slave.parked_at
            puts "INFO: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+" and will be shut down now."
           # stop slave VM
           DQCCcloud.stop_vm(slave)
+          # remove from global list
+          $slave_vms.delete(slave)
         else
           puts "DEBUG: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+"."
         end
