@@ -217,7 +217,7 @@ module DQCCqueue
         # add slaves to parking pool
         set_slave_pool(user_slaves[i], DQCCconfig.parking_pool)
         # save parking time
-        if (vm = search_registered_vm_by_address(user_slaves.hwinfo.address))
+        if (vm = search_registered_vm_by_address(user_slaves[i].hwinfo.address))
           vm.parked_at = Time.now.to_i
         else
           puts "ERROR: Parking time could not be saved."
