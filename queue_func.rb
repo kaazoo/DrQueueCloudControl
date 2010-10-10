@@ -109,7 +109,6 @@ module DQCCqueue
     user_list = []
 
     $slave_list.each do |computer|
-      puts computer_pools(computer)
       if computer_pools(computer).include? user_hash
         user_list << computer
       end
@@ -223,7 +222,7 @@ module DQCCqueue
       end
     # no user slaves found
     else
-      puts "* Request for remove_slaves() but no running user slaves found!"
+      puts "INFO: No slave had to be removed."
     end
   end    
 

@@ -60,7 +60,7 @@ while 1
       puts "INFO: There are "+running_jobs.length.to_s+" running jobs in rendersession "+rs.id.to_s+"."
     end
 
-    #cycle through all running jobs
+    # cycle through all running jobs
     running_jobs.each do |job|
 
       # update time counter

@@ -75,8 +75,7 @@ module DQCCcloud
   def get_slave_vms
     puts "DEBUG: get_slave_vms()"
 
-    registered_vms = []
-    i = 0
+    registered_vms = $slave_vms
 
     # connect to EC2
     ec2 = AWS::EC2::Base.new(:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY'])
@@ -86,10 +85,21 @@ module DQCCcloud
       res.instancesSet.item.each do |instance|
         # we are not interested in terminated/stopping and non-slave VMs
         if (["running", "pending"].include?(instance.instanceState.name)) && (instance.imageId == ENV['EC2_SLAVE_AMI'])
-          ### TODO: update old entries instead of overwriting them all
-          registered_vms[i] = SlaveVM.new(instance.instanceId)
-          registered_vms[i].state = instance.instanceState.name
-          registered_vms[i].queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+          # update info about registered VMs if they are known
+          reg_vm = search_registered_vm(instance.instanceId)
+            if reg_vm != false
+              # update existing entry
+              puts "DEBUG: VM "+instance.instanceId+" is known. Updating entry."
+              reg_vm.state = instance.instanceState.name
+              reg_vm.queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+            else
+              # create new entry
+              puts "DEBUG: VM "+instance.instanceId+" is not known. Creating new entry."
+              new_vm = SlaveVM.new(instance.instanceId)
+              new_vm.state = instance.instanceState.name
+              new_vm.queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+              registered_vms << new_vm
+            end
         else
           puts "INFO: VM "+instance.instanceId+" is not useable."
         end
@@ -97,6 +107,19 @@ module DQCCcloud
     end
 
     return registered_vms
+  end
+
+
+  # look if an instace_id is already in the list
+  def search_registered_vm(instance_id)
+    $slave_vms.each do |reg_vm|
+      if reg_vm.instance_id == instance_id
+        # found
+        return reg_vm
+      end
+    end
+    # not found
+    return false
   end
 
 
