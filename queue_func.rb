@@ -138,20 +138,20 @@ module DQCCqueue
 
   # modify pool membership (requires direct communication to slave)
   def set_slave_pool(slave, pool)
-    puts "DEBUG: set_slave_pool("+slave.hwinfo.name.to_s+", \""+pool.to_s+"\")"
+    puts "DEBUG: set_slave_pool("+slave.hwinfo.address.to_s+", \""+pool.to_s+"\")"
 
     # remove from all pools
     np_max = slave.limits.npools - 1
     (0..np_max).each do |np|
-      puts "DEBUG: removing "+slave.hwinfo.name+" from pool "+slave.limits.get_pool(np).name
-      if Drqueue::request_slave_limits_pool_remove(slave.hwinfo.name, slave.limits.get_pool(np).name, Drqueue::CLIENT) == 0
+      puts "DEBUG: removing "+slave.hwinfo.address+" from pool "+slave.limits.get_pool(np).name
+      if Drqueue::request_slave_limits_pool_remove(slave.hwinfo.address, slave.limits.get_pool(np).name, Drqueue::CLIENT) == 0
         puts "ERROR: Could not remove slave from pool!"
       end
     end
 
     # add to specific pool
-    puts "DEBUG: adding "+slave.hwinfo.name+" to pool "+pool
-    if Drqueue::request_slave_limits_pool_add(slave.hwinfo.name, pool, Drqueue::CLIENT) == 0
+    puts "DEBUG: adding "+slave.hwinfo.address+" to pool "+pool
+    if Drqueue::request_slave_limits_pool_add(slave.hwinfo.address, pool, Drqueue::CLIENT) == 0
       puts "ERROR: Could not add slave to pool!"
     end
 
