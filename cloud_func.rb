@@ -91,18 +91,24 @@ module DQCCcloud
         # we are not interested in terminated/stopping and non-slave VMs
         if (["running", "pending"].include?(instance.instanceState.name)) && (instance.imageId == ENV['EC2_SLAVE_AMI'])
           # update info about registered VMs if they are known
-          reg_vm = search_registered_vm(instance.instanceId)
+          reg_vm = search_registered_vm_by_instance_id(instance.instanceId)
             if reg_vm != false
               # update existing entry
               puts "DEBUG: VM "+instance.instanceId+" is known. Updating entry."
-              reg_vm.state = instance.instanceState.name
+              reg_vm.public_dns = instance.dnsName
+              reg_vm.private_dns = instance.privateDnsName
+              reg_vm.private_ip = instance.privateIpAddress
               reg_vm.queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+              reg_vm.state = instance.instanceState.name
             else
               # create new entry
               puts "DEBUG: VM "+instance.instanceId+" is not known. Creating new entry."
               new_vm = SlaveVM.new(instance.instanceId)
-              new_vm.state = instance.instanceState.name
+              new_vm.public_dns = instance.dnsName
+              new_vm.private_dns = instance.privateDnsName
+              new_vm.private_ip = instance.privateIpAddress
               new_vm.queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+              new_vm.state = instance.instanceState.name
               registered_vms << new_vm
             end
         else
@@ -116,10 +122,25 @@ module DQCCcloud
 
 
   # look if an instance_id is already in the list
-  def search_registered_vm(instance_id)
+  def search_registered_vm_by_instance_id(instance_id)
     if $slave_vms != nil
       $slave_vms.each do |reg_vm|
         if reg_vm.instance_id == instance_id
+          # found
+          return reg_vm
+        end
+      end
+    end
+    # not found
+    return false
+  end
+
+
+  # look if an instance_id is already in the list
+  def search_registered_vm_by_address(address)
+    if $slave_vms != nil
+      $slave_vms.each do |reg_vm|
+        if reg_vm.privateIpAddress == address
           # found
           return reg_vm
         end

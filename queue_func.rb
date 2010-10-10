@@ -13,12 +13,14 @@ module DQCCqueue
 
 
   class SlaveVM
-    attr_accessor :instance_id, :hostname, :public_name, :queue_info, :state, :parked_at
+    attr_accessor :instance_id, :hostname, :public_dns, :private_dns, :private_ip, :queue_info, :state, :parked_at
 
     def initialize(instance_id)
       @instance_id = instance_id
       @hostname = nil
-      @public_name = nil
+      @public_dns = nil
+      @private_dns = nil
+      @private_ip = nil
       @queue_info = nil
       @state = "pending"
       @parked_at = nil
@@ -215,7 +217,11 @@ module DQCCqueue
         # add slaves to parking pool
         set_slave_pool(user_slaves[i], DQCCconfig.parking_pool)
         # save parking time
-        user_slaves[i].parked_at = Time.now.to_i
+        if (vm = search_registered_vm_by_address(user_slaves.hwinfo.address))
+          vm.parked_at = Time.now.to_i
+        else
+          puts "ERROR: Parking time could not be saved."
+        end
       end
     # no user slaves found
     else
