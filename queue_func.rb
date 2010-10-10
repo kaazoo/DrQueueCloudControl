@@ -13,10 +13,10 @@ module DQCCqueue
 
 
   class SlaveVM
-    attr_accessor :instace_id, :hostname, :public_name, :queue_info, :state, :parked_at
+    attr_accessor :instance_id, :hostname, :public_name, :queue_info, :state, :parked_at
 
-    def initialize(instace_id)
-      @instace_id = instace_id
+    def initialize(instance_id)
+      @instance_id = instance_id
       @hostname = nil
       @public_name = nil
       @queue_info = nil
@@ -182,7 +182,7 @@ module DQCCqueue
       puts "DEBUG: Found "+usable.to_s+" starting slaves."
       # work on a number of starting slaves
       0.upto(usable - 1) do |i|
-        puts "INFO: Waiting for "+starting_slaves[i].instace_id+" to finish startup."
+        puts "INFO: Waiting for "+starting_slaves[i].instance_id+" to finish startup."
       end
 
     # look for unused slaves and add them to user pool(s)

@@ -115,7 +115,7 @@ module DQCCcloud
   end
 
 
-  # look if an instace_id is already in the list
+  # look if an instance_id is already in the list
   def search_registered_vm(instance_id)
     $slave_vms.each do |reg_vm|
       if reg_vm.instance_id == instance_id
