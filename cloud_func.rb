@@ -76,7 +76,7 @@ module DQCCcloud
     puts "DEBUG: get_slave_vms()"
 
     # reuse old list if existing
-    if $slave_vms.length > 0
+    if $slave_vms != nil
       registered_vms = $slave_vms
     else
       registered_vms = []
