@@ -75,7 +75,12 @@ module DQCCcloud
   def get_slave_vms
     puts "DEBUG: get_slave_vms()"
 
-    registered_vms = $slave_vms
+    # reuse old list if existing
+    if $slave_vms.length > 0
+      registered_vms = $slave_vms
+    else
+      registered_vms = []
+    end
 
     # connect to EC2
     ec2 = AWS::EC2::Base.new(:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY'])
