@@ -140,7 +140,7 @@ module DQCCcloud
   def search_registered_vm_by_address(address)
     if $slave_vms != nil
       $slave_vms.each do |reg_vm|
-        if reg_vm.privateIpAddress == address
+        if reg_vm.private_ip == address
           # found
           return reg_vm
         end
