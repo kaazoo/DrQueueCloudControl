@@ -167,8 +167,14 @@ module DQCCqueue
     puts "DEBUG: concat_pool_names("+user_hash.to_s+")"
 
     pool_string = ""
+    count = DQCCconfig.pool_types.length
+    i = 1
     DQCCconfig.pool_types.each do |type|
-      pool_string += user_hash+"_"+type+", "
+      pool_string += user_hash+"_"+type
+      if i < count
+        pool_string += ", "
+      end
+      i += 1
     end
 
     return pool_string
@@ -195,7 +201,9 @@ module DQCCqueue
       0.upto(usable - 1) do |i|
         # add to user pool(s)
         puts "INFO: I will add slave \""+parked_slaves[i].queue_info.hwinfo.name+"\" to pools \""+concat_pool_names(user_hash)+"\"."
-        set_slave_pool(parked_slaves[i].queue_info.hwinfo.name, concat_pool_names(user_hash))
+        set_slave_pool(parked_slaves[i].queue_info, concat_pool_names(user_hash))
+        # update queue info
+        parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].private_ip)
       end
 
     # if no free slave is running, start new one
