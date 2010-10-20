@@ -49,7 +49,12 @@ module DQCCqueue
   def fetch_slave_list
     puts "DEBUG: fetch_slave_list()"
 
-    return Drqueue::request_computer_list(Drqueue::CLIENT)
+    begin
+      return Drqueue::request_computer_list(Drqueue::CLIENT)
+    rescue IOError
+      puts "ERROR: Could not connect to DrQueue master daemon!"
+      exit 1
+    end
   end
 
 
@@ -184,18 +189,25 @@ module DQCCqueue
   def add_slaves(user_hash, diff)
     puts "DEBUG: add_slaves("+user_hash.to_s+", "+diff.to_s+")"
 
+    remaining = diff
+
     # look for slaves which have just been started
+    ### TODO: look for slaves of this user!
     if (starting_slaves = get_starting_slaves).length > 0
-      usable = [starting_slaves.length, diff].min
+      usable = [starting_slaves.length, remaining].min
       puts "DEBUG: Found "+usable.to_s+" starting slaves."
       # work on a number of starting slaves
       0.upto(usable - 1) do |i|
         puts "INFO: Waiting for "+starting_slaves[i].instance_id+" to finish startup."
       end
+      if remaining > usable
+        remaining -= usable
+      end
+    end
 
     # look for unused slaves and add them to user pool(s)
-    elsif (parked_slaves = get_parked_slaves).length > 0
-      usable = [parked_slaves.length, diff].min
+    if (parked_slaves = get_parked_slaves).length > 0
+      usable = [parked_slaves.length, remaining].min
       puts "DEBUG: Found "+usable.to_s+" parked slaves."
       # work on a number of parked slaves
       0.upto(usable - 1) do |i|
@@ -205,14 +217,22 @@ module DQCCqueue
         # update queue info
         parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].private_ip)
       end
-
-    # if no free slave is running, start new one
-    else
-      0.upto(diff - 1) do |i|
-        # start up new slave VM
-        slave = DQCCcloud.start_vm(concat_pool_names(user_hash))
+      if remaining > usable
+        remaining -= usable
       end
     end
+
+    # we still need to start more
+    if remaining > 0
+      0.upto(remaining - 1) do |i|
+        # start up new slave VM
+        slave = DQCCcloud.start_vm(concat_pool_names(user_hash))
+        if slave == nil
+          puts "ERROR: Failed to start VM."
+        end
+      end
+    end
+
   end
 
 
