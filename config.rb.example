@@ -29,6 +29,10 @@ module DQCCconfig
   attr :park_time
   @park_time = 600
 
+  # maximum number of VMs
+  attr :max_vms
+  @max_vms = 20
+
   # available render pool types
   attr :pool_types
   @pool_types = ['blender', 'maya', 'cinema4d']

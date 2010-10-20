@@ -26,8 +26,13 @@ module DQCCcloud
     user_data = prepare_user_data(hostname, pool_list)
     prepare_vpn_cert(hostname, DQCCconfig.local_ip)
 
-    # start new instance
-    instance_data = ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => ENV['EC2_INSTANCE_TYPE'], :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
+    begin
+      # start new instance
+      instance_data = ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => ENV['EC2_INSTANCE_TYPE'], :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
+    rescue AWS::InstanceLimitExceeded
+      puts "ERROR: Maximum number of VMs reached."
+      return nil
+    end
 
     # keep VM info
     slave = SlaveVM.new(instance_data.instancesSet.item[0].instanceId)

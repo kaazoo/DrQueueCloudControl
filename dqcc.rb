@@ -84,7 +84,11 @@ while 1
         # check if slaves are running
         running_slaves = DQCCqueue.get_user_slaves(user_hash).length
         diff = rs.num_slaves - running_slaves
-        if diff > 0
+        max_diff = DQCCconfig.max_vms - rs.num_slaves
+        if diff > max_diff
+          puts "ERROR: Requested number of slaves exceeds maximum number of VMs. Will only add "+max_diff.to_s+" slaves."
+          diff = DQCCconfig.max_vms - rs.num_slaves
+        elsif diff > 0
           puts "INFO: I have to add "+diff.to_s+" more slaves to session "+rs.id.to_s+"."
           # add slaves
           DQCCqueue.add_slaves(user_hash, diff)
