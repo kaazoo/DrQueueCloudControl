@@ -64,10 +64,12 @@ while 1
       puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". I have to remove all slaves."
       # remove all slaves
       DQCCqueue.remove_slaves(user_hash, rs.num_slaves)
-      # update timestamp
+      # update timestamps
       if rs.stop_timestamp == 0
+        rs.time_passed = Time.now.to_i - rs.start_timestamp
         rs.stop_timestamp = Time.now.to_i
         puts "INFO: Setting stop timestamp to: "+rs.stop_timestamp.to_s+"."
+        rs.save!
       end
       break
     else
@@ -77,18 +79,19 @@ while 1
     # cycle through all running jobs
     running_jobs.each do |job|
 
-      # update time counter
+      # start time counter
       if rs.time_passed == 0
         rs.start_timestamp = Time.now.to_i
         rs.time_passed = 1
         puts "INFO: Session starts now."
       else
-        # continue counting when there is a running job in the rendersession
+        # continue counting when a job is active again
         if rs.stop_timestamp > 0
           rs.start_timestamp = rs.stop_timestamp
           rs.stop_timestamp = 0
           puts "INFO: Setting start timestamp to: "+rs.start_timestamp.to_s+" and stop timestamp to 0."
         end
+        # update time counter
         rs.time_passed = Time.now.to_i - rs.start_timestamp
         puts "INFO: Time passed in this session: "+rs.time_passed.to_s+" sec."
       end
