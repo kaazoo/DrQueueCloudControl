@@ -141,7 +141,12 @@ module DQCCqueue
 
   # modify pool membership (requires direct communication to slave)
   def set_slave_pool(slave, pool)
-    puts "DEBUG: set_slave_pool("+slave.hwinfo.address.to_s+", \""+pool.to_s+"\")"
+    puts "DEBUG: set_slave_pool("+slave.to_s+", \""+pool.to_s+"\")"
+
+    if slave.hwinfo == nil
+      puts "ERROR: Slave "+slave.to_s+" has no hwinfo!"
+      return false
+    end
 
     # save names of old pools
     old_pools = []
@@ -200,9 +205,10 @@ module DQCCqueue
       0.upto(usable - 1) do |i|
         puts "INFO: Waiting for "+starting_slaves[i].instance_id+" to finish startup."
       end
-      if remaining > usable
+      if remaining >= usable
         remaining -= usable
       end
+      puts "DEBUG: Remaining slaves that need to be started: "+remaining.to_s
     end
 
     # look for unused slaves and add them to user pool(s)
@@ -217,12 +223,14 @@ module DQCCqueue
         # update queue info
         parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].private_ip)
       end
-      if remaining > usable
+      if remaining >= usable
         remaining -= usable
       end
+      puts "DEBUG: Remaining slaves that need to be started: "+remaining.to_s
     end
 
     # we still need to start more
+    puts "DEBUG: Remaining slaves that need to be started: "+remaining.to_s
     if remaining > 0
       0.upto(remaining - 1) do |i|
         # start up new slave VM
