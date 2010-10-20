@@ -51,6 +51,11 @@ while 1
       end
     end
 
+    # skip this rendersession if not used
+    if job_list.length == 0
+      break
+    end
+
     # get needed info about job owner
     user_data = DQCCdb.fetch_user_data(job_list[0].id)
     user_hash = Digest::MD5.hexdigest(user_data.ldap_account)
@@ -84,10 +89,10 @@ while 1
         # check if slaves are running
         running_slaves = DQCCqueue.get_user_slaves(user_hash).length
         diff = rs.num_slaves - running_slaves
-        max_diff = DQCCconfig.max_vms - rs.num_slaves
+        max_diff = DQCCconfig.max_vms - $slave_vms.length
         if diff > max_diff
           puts "ERROR: Requested number of slaves exceeds maximum number of VMs. Will only add "+max_diff.to_s+" slaves."
-          diff = DQCCconfig.max_vms - rs.num_slaves
+          DQCCqueue.add_slaves(user_hash, max_diff)
         elsif diff > 0
           puts "INFO: I have to add "+diff.to_s+" more slaves to session "+rs.id.to_s+"."
           # add slaves
