@@ -61,12 +61,11 @@ while 1
     user_hash = Digest::MD5.hexdigest(user_data.ldap_account)
 
     if running_jobs.length == 0
-      puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". I have to remove all slaves."
+      puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". Removing all slaves."
       # remove all slaves
       DQCCqueue.remove_slaves(user_hash, rs.num_slaves)
       # update timestamps
       if rs.stop_timestamp == 0
-        rs.time_passed = Time.now.to_i - rs.start_timestamp
         rs.stop_timestamp = Time.now.to_i
         puts "INFO: Setting stop timestamp to: "+rs.stop_timestamp.to_s+"."
         rs.save!
@@ -79,26 +78,27 @@ while 1
     # cycle through all running jobs
     running_jobs.each do |job|
 
-      # start time counter
-      if rs.time_passed == 0
+      if (rs.time_passed == 0) && (rs.overall_time_passed == 0)
+        # start time counter
+        puts "INFO: Session starts now."
         rs.start_timestamp = Time.now.to_i
         rs.time_passed = 1
-        puts "INFO: Session starts now."
-      else
+      elsif (rs.time_passed > 0) && (rs.stop_timestamp > 0)
         # continue counting when a job is active again
-        if rs.stop_timestamp > 0
-          rs.start_timestamp = rs.stop_timestamp
-          rs.stop_timestamp = 0
-          puts "INFO: Setting start timestamp to: "+rs.start_timestamp.to_s+" and stop timestamp to 0."
-        end
+        puts "INFO: Sessions continues. "+rs.time_passed.to_s+" sec passed by so far."
+        rs.start_timestamp = Time.now.to_i
+        rs.stop_timestamp = 0
+        rs.overall_time_passed += rs.time_passed
+        rs.time_passed = 0
+      else
         # update time counter
+        puts "INFO: Time passed: "+rs.time_passed.to_s+" sec. Overall time passed: "+rs.overall_time_passed.to_s
         rs.time_passed = Time.now.to_i - rs.start_timestamp
-        puts "INFO: Time passed in this session: "+rs.time_passed.to_s+" sec."
       end
       rs.save!
 
       # look if there is time left
-      if (time_left = rs.run_time - rs.time_passed) > 0
+      if (time_left = rs.run_time - rs.overall_time_passed) > 0
         puts "INFO: There is time left in session "+rs.id.to_s+"."
         # check if slaves are running
         running_slaves = DQCCqueue.get_user_slaves(user_hash).length

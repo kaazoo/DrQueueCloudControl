@@ -234,7 +234,7 @@ module DQCCqueue
     if remaining > 0
       0.upto(remaining - 1) do |i|
         # start up new slave VM
-        slave = DQCCcloud.start_vm(concat_pool_names(user_hash))
+        slave = DQCCcloud.start_vm(user_hash, concat_pool_names(user_hash))
         if slave == nil
           puts "ERROR: Failed to start VM."
         end

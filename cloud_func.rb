@@ -15,7 +15,7 @@ module DQCCcloud
 
 
   # create slave VM instance
-  def start_vm(pool_list)
+  def start_vm(user_hash, pool_list)
     puts "DEBUG: start_vm("+pool_list.to_s+")"
 
     # connect to EC2
@@ -23,7 +23,7 @@ module DQCCcloud
 
     # generate provisioning data
     hostname = 'slave-'+Digest::MD5.hexdigest(rand.to_s)
-    user_data = prepare_user_data(hostname, pool_list)
+    user_data = prepare_user_data(user_hash, hostname, pool_list)
     prepare_vpn_cert(hostname, DQCCconfig.local_ip)
 
     begin
@@ -60,17 +60,13 @@ module DQCCcloud
 
 
   # apply changes to startup script and convert to base64
-  def prepare_user_data(hostname, pool_list)
+  def prepare_user_data(user_hash, hostname, pool_list)
     puts "DEBUG: prepare_user_data("+hostname+", \""+pool_list+"\")"
 
     master = ENV['DRQUEUE_MASTER_FOR_VMS']
     dowonload_ip = DQCCconfig.local_ip
 
-    if pool_list != nil
-      script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g'`
-    else
-      script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g'`
-    end
+    script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g' | sed 's/REPL_USERDIR/#{user_hash}/g'`
 
     return Base64.b64encode(script_body)
   end
