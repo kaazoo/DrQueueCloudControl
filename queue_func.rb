@@ -13,11 +13,12 @@ module DQCCqueue
 
 
   class SlaveVM
-    attr_accessor :instance_id, :instance_type, :hostname, :public_dns, :private_dns, :private_ip, :queue_info, :state, :parked_at
+    attr_accessor :instance_id, :instance_type, :owner, :hostname, :public_dns, :private_dns, :private_ip, :queue_info, :state, :parked_at
 
-    def initialize(instance_id, instance_type)
+    def initialize(instance_id, instance_type, owner)
       @instance_id = instance_id
       @instance_type = instance_type
+      @owner = owner
       @hostname = nil
       @public_dns = nil
       @private_dns = nil
@@ -59,14 +60,14 @@ module DQCCqueue
   end
 
 
-  def get_parked_slaves(vm_type)
-    puts "DEBUG: get_parked_slaves("+vm_type.to_s+")"
+  def get_parked_slaves(vm_type, owner)
+    puts "DEBUG: get_parked_slaves("+vm_type.to_s+", "+owner.to_s+")"
 
     # walk through list and look for parking pool
     park_list = []
 
     $slave_vms.each do |vm|
-      if (vm.queue_info != nil) && (computer_pools(vm.queue_info).include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type)
+      if (vm.queue_info != nil) && (computer_pools(vm.queue_info).include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type) && (vm.owner == owner)
         park_list << vm
       end
     end
@@ -91,14 +92,14 @@ module DQCCqueue
   end
 
 
-  def get_starting_slaves(vm_type)
-    puts "DEBUG: get_starting_slaves("+vm_type.to_s+")"
+  def get_starting_slaves(vm_type, owner)
+    puts "DEBUG: get_starting_slaves("+vm_type.to_s+", "+owner.to_s+")"
 
     # walk through list and look for recently started slaves
     starting_list = []
 
     $slave_vms.each do |vm|
-      if ((vm.state == "pending") || (vm.queue_info == nil)) && (vm.instance_type == vm_type)
+      if ((vm.state == "pending") || (vm.queue_info == nil)) && (vm.instance_type == vm_type) && (vm.owner == owner)
         starting_list << vm
       end
     end
@@ -198,8 +199,7 @@ module DQCCqueue
     remaining = diff
 
     # look for slaves which have just been started
-    ### TODO: look for slaves of this user!
-    if (starting_slaves = get_starting_slaves(vm_type)).length > 0
+    if (starting_slaves = get_starting_slaves(vm_type, user_hash)).length > 0
       usable = [starting_slaves.length, remaining].min
       puts "DEBUG: Found "+usable.to_s+" starting slaves of type \""+vm_type+"\"."
       # work on a number of starting slaves
@@ -213,7 +213,7 @@ module DQCCqueue
     end
 
     # look for unused slaves and add them to user pool(s)
-    if (parked_slaves = get_parked_slaves(vm_type)).length > 0
+    if (parked_slaves = get_parked_slaves(vm_type, user_hash)).length > 0
       usable = [parked_slaves.length, remaining].min
       puts "DEBUG: Found "+usable.to_s+" parked slaves of type \""+vm_type+"\"."
       # work on a number of parked slaves
