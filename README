@@ -1,8 +1,8 @@
 DrQueueCloudControl
 
-This is a daemon which is used to supervise render sessions and control DrQueue slaves / cloud VMs. It needs connectivity to a DrQueueOnRails instance.
+This is a daemon which is used to supervise render sessions and control DrQueue slaves / EC2 cloud VMs. It needs connectivity to a DrQueueOnRails instance and to a DrQueue master daemon.
 
-DQCC uses the Rubygems drqueue, active_record and amazon-ec2.
+DQCC uses the Rubygems 'drqueue', 'active_record' and 'amazon-ec2'.
 
 
 Copyright (C) 2010 Andreas Schroeder
