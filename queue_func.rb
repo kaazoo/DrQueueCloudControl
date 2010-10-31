@@ -230,7 +230,7 @@ module DQCCqueue
 
 
   def remove_slaves(user_hash, vm_type, diff)
-    puts "DEBUG: remove_slaves("+user_hash.to_s+", "+diff.to_s+")"
+    puts "DEBUG: remove_slaves("+user_hash.to_s+", "+vm_type.to_s+", "+diff.to_s+")"
 
     # work on a number of parked slaves
     if (user_slaves = get_user_slaves(user_hash)).length > 0

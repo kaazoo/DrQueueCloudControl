@@ -63,7 +63,7 @@ while 1
     if running_jobs.length == 0
       puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". Removing all slaves."
       # remove all slaves
-      DQCCqueue.remove_slaves(user_hash, rs.num_slaves)
+      DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
       # update timestamps
       if rs.stop_timestamp == 0
         rs.stop_timestamp = Time.now.to_i
