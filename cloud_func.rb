@@ -15,8 +15,8 @@ module DQCCcloud
 
 
   # create slave VM instance
-  def start_vm(user_hash, pool_list)
-    puts "DEBUG: start_vm("+pool_list.to_s+")"
+  def start_vm(user_hash, vm_type, pool_list)
+    puts "DEBUG: start_vm("+user_hash.to_s+", "+vm_type.to_s+", "+pool_list.to_s+")"
 
     # connect to EC2
     ec2 = AWS::EC2::Base.new(:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY'])
@@ -28,14 +28,14 @@ module DQCCcloud
 
     begin
       # start new instance
-      instance_data = ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => ENV['EC2_INSTANCE_TYPE'], :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
+      instance_data = ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => vm_type, :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
     rescue AWS::InstanceLimitExceeded
       puts "ERROR: Maximum number of VMs reached."
       return nil
     end
 
     # keep VM info
-    slave = SlaveVM.new(instance_data.instancesSet.item[0].instanceId)
+    slave = SlaveVM.new(instance_data.instancesSet.item[0].instanceId, instance_data.instancesSet.item[0].instanceType)
     puts slave.hostname = hostname
 
     # append slave VM to list of known VMs

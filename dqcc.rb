@@ -106,15 +106,15 @@ while 1
         max_diff = DQCCconfig.max_vms - $slave_vms.length
         if diff > max_diff
           puts "ERROR: Requested number of slaves exceeds maximum number of VMs. Will only add "+max_diff.to_s+" slaves."
-          DQCCqueue.add_slaves(user_hash, max_diff)
+          DQCCqueue.add_slaves(user_hash, rs.vm_type, max_diff)
         elsif diff > 0
           puts "INFO: I have to add "+diff.to_s+" more slaves to session "+rs.id.to_s+"."
           # add slaves
-          DQCCqueue.add_slaves(user_hash, diff)
+          DQCCqueue.add_slaves(user_hash, rs.vm_type, diff)
         elsif diff < 0
           puts "INFO: I have to remove "+diff.abs.to_s+" slaves from session "+rs.id.to_s+"."
           # remove slaves because there are more then defined
-          DQCCqueue.remove_slaves(user_hash, diff.abs)
+          DQCCqueue.remove_slaves(user_hash, rs.vm_type, diff.abs)
         else
           puts "INFO: I don't have to do anything for this job."
         end
@@ -122,7 +122,7 @@ while 1
       else
         puts "INFO: I have to remove all slaves from session "+rs.id.to_s+"."
         # remove all slaves
-        DQCCqueue.remove_slaves(user_hash, rs.num_slaves)
+        DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
       end
     end
   end

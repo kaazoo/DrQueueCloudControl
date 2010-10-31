@@ -13,10 +13,11 @@ module DQCCqueue
 
 
   class SlaveVM
-    attr_accessor :instance_id, :hostname, :public_dns, :private_dns, :private_ip, :queue_info, :state, :parked_at
+    attr_accessor :instance_id, :instance_type, :hostname, :public_dns, :private_dns, :private_ip, :queue_info, :state, :parked_at
 
-    def initialize(instance_id)
+    def initialize(instance_id, instance_type)
       @instance_id = instance_id
+      @instance_type = instance_type
       @hostname = nil
       @public_dns = nil
       @private_dns = nil
@@ -58,30 +59,14 @@ module DQCCqueue
   end
 
 
-  def check_slaves(user_hash)
-    puts "DEBUG: check_slaves("+user_hash.to_s+")"
-
-    # walk through list and look for hash in pool name
-    counter = 0
-    list = fetch_slave_list
-    list.each do |computer|
-      if computer.limits.pool.include? user_hash
-        counter += 1
-      end
-    end
-
-    return counter
-  end
-
-
-  def get_parked_slaves
-    puts "DEBUG: get_parked_slaves()"
+  def get_parked_slaves(vm_type)
+    puts "DEBUG: get_parked_slaves("+vm_type.to_s+")"
 
     # walk through list and look for parking pool
     park_list = []
 
     $slave_vms.each do |vm|
-      if (vm.queue_info != nil) && (computer_pools(vm.queue_info).include? DQCCconfig.parking_pool)
+      if (vm.queue_info != nil) && (computer_pools(vm.queue_info).include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type)
         park_list << vm
       end
     end
@@ -90,14 +75,14 @@ module DQCCqueue
   end
 
 
-  def get_starting_slaves
-    puts "DEBUG: get_starting_slaves()"
+  def get_starting_slaves(vm_type)
+    puts "DEBUG: get_starting_slaves("+vm_type.to_s+")"
 
     # walk through list and look for recently started slaves
     starting_list = []
 
     $slave_vms.each do |vm|
-      if (vm.state == "pending") || (vm.queue_info == nil)
+      if ((vm.state == "pending") || (vm.queue_info == nil)) && (vm.instance_type == vm_type)
         starting_list << vm
       end
     end
@@ -191,16 +176,16 @@ module DQCCqueue
   end
 
 
-  def add_slaves(user_hash, diff)
-    puts "DEBUG: add_slaves("+user_hash.to_s+", "+diff.to_s+")"
+  def add_slaves(user_hash, vm_type, diff)
+    puts "DEBUG: add_slaves("+user_hash.to_s+", "+vm_type.to_s+", "+diff.to_s+")"
 
     remaining = diff
 
     # look for slaves which have just been started
     ### TODO: look for slaves of this user!
-    if (starting_slaves = get_starting_slaves).length > 0
+    if (starting_slaves = get_starting_slaves(vm_type)).length > 0
       usable = [starting_slaves.length, remaining].min
-      puts "DEBUG: Found "+usable.to_s+" starting slaves."
+      puts "DEBUG: Found "+usable.to_s+" starting slaves of type \""+vm_type+"\"."
       # work on a number of starting slaves
       0.upto(usable - 1) do |i|
         puts "INFO: Waiting for "+starting_slaves[i].instance_id+" to finish startup."
@@ -212,9 +197,9 @@ module DQCCqueue
     end
 
     # look for unused slaves and add them to user pool(s)
-    if (parked_slaves = get_parked_slaves).length > 0
+    if (parked_slaves = get_parked_slaves(vm_type)).length > 0
       usable = [parked_slaves.length, remaining].min
-      puts "DEBUG: Found "+usable.to_s+" parked slaves."
+      puts "DEBUG: Found "+usable.to_s+" parked slaves of type \""+vm_type+"\"."
       # work on a number of parked slaves
       0.upto(usable - 1) do |i|
         # add to user pool(s)
@@ -234,7 +219,7 @@ module DQCCqueue
     if remaining > 0
       0.upto(remaining - 1) do |i|
         # start up new slave VM
-        slave = DQCCcloud.start_vm(user_hash, concat_pool_names(user_hash))
+        slave = DQCCcloud.start_vm(user_hash, vm_type, concat_pool_names(user_hash))
         if slave == nil
           puts "ERROR: Failed to start VM."
         end
@@ -244,19 +229,18 @@ module DQCCqueue
   end
 
 
-  def remove_slaves(user_hash, diff)
+  def remove_slaves(user_hash, vm_type, diff)
     puts "DEBUG: remove_slaves("+user_hash.to_s+", "+diff.to_s+")"
 
     # work on a number of parked slaves
     if (user_slaves = get_user_slaves(user_hash)).length > 0
       0.upto(diff - 1) do |i|
-        # add slaves to parking pool
-        set_slave_pool(user_slaves[i], DQCCconfig.parking_pool)
-        # save parking time
-        if (vm = search_registered_vm_by_address(user_slaves[i].hwinfo.address))
+        vm = search_registered_vm_by_address(user_slaves[i].hwinfo.address)
+        if vm.instance_type == vm_type
+          # add slaves to parking pool
+          set_slave_pool(user_slaves[i], DQCCconfig.parking_pool)
+          # save parking time
           vm.parked_at = Time.now.to_i
-        else
-          puts "ERROR: Parking time could not be saved."
         end
       end
     # no user slaves found
