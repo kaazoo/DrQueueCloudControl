@@ -104,7 +104,7 @@ module DQCCcloud
             else
               # create new entry
               puts "INFO: VM "+instance.instanceId+" is not known. Creating new entry."
-              new_vm = SlaveVM.new(instance.instanceId)
+              new_vm = SlaveVM.new(instance.instanceId, instance.instanceType)
               new_vm.public_dns = instance.dnsName
               new_vm.private_dns = instance.privateDnsName
               new_vm.private_ip = instance.privateIpAddress
