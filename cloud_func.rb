@@ -113,7 +113,7 @@ module DQCCcloud
               registered_vms << new_vm
             end
         else
-          puts "INFO: VM "+instance.instanceId+" is not useable."
+          puts "INFO: VM "+instance.instanceId+" is not usable."
         end
       end
     end

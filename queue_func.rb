@@ -75,6 +75,22 @@ module DQCCqueue
   end
 
 
+  def get_all_parked_slaves()
+    puts "DEBUG: get_parked_slaves()"
+
+    # walk through list and look for parking pool
+    park_list = []
+
+    $slave_vms.each do |vm|
+      if (vm.queue_info != nil) && (computer_pools(vm.queue_info).include? DQCCconfig.parking_pool)
+        park_list << vm
+      end
+    end
+
+    return park_list
+  end
+
+
   def get_starting_slaves(vm_type)
     puts "DEBUG: get_starting_slaves("+vm_type.to_s+")"
 
@@ -253,7 +269,7 @@ module DQCCqueue
   def shutdown_old_slaves
     puts "DEBUG: shutdown_old_slaves()"
 
-    parked_slaves = get_parked_slaves
+    parked_slaves = get_all_parked_slaves()
     parked_slaves.each do |slave|
       if slave.parked_at == nil
         puts "ERROR: Slave "+slave.instance_id+" has been parked but when isn't known. Shutting down now."
