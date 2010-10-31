@@ -77,7 +77,7 @@ module DQCCqueue
 
 
   def get_all_parked_slaves()
-    puts "DEBUG: get_parked_slaves()"
+    puts "DEBUG: get_all_parked_slaves()"
 
     # walk through list and look for parking pool
     park_list = []
@@ -138,6 +138,14 @@ module DQCCqueue
     slave_list = ""
 
     return slave_info
+  end
+
+
+  def get_owner_from_pools(slave)
+    pool = slave.limits.get_pool(0).name
+    user_hash = pool.split("_")[0]
+
+    return user_hash
   end
 
 

@@ -104,11 +104,12 @@ module DQCCcloud
             else
               # create new entry
               puts "INFO: VM "+instance.instanceId+" is not known. Creating new entry."
-              new_vm = SlaveVM.new(instance.instanceId, instance.instanceType)
+              new_vm = SlaveVM.new(instance.instanceId, instance.instanceType, nil)
               new_vm.public_dns = instance.dnsName
               new_vm.private_dns = instance.privateDnsName
               new_vm.private_ip = instance.privateIpAddress
               new_vm.queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+              new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm.queue_info)
               new_vm.state = instance.instanceState.name
               registered_vms << new_vm
             end
