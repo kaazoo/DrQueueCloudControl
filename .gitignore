@@ -1,1 +1,5 @@
 config.rb
+dqcc.log
+dqcc.output
+dqcc.pid
+
