@@ -65,8 +65,9 @@ module DQCCcloud
 
     master = ENV['DRQUEUE_MASTER_FOR_VMS']
     dowonload_ip = DQCCconfig.local_ip
+    tmpl_path = File.join(File.dirname(__FILE__), 'startup_script.template')
 
-    script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' startup_script.template | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g' | sed 's/REPL_USERDIR/#{user_hash}/g'`
+    script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' #{tmpl_path} | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g' | sed 's/REPL_USERDIR/#{user_hash}/g'`
 
     return Base64.b64encode(script_body)
   end
@@ -156,7 +157,8 @@ module DQCCcloud
   # create a special vpn certificate for slave
   def prepare_vpn_cert(hostname, server_ip)
     ### TODO: check for valid values as this goes directly to a shell
-    `sudo ./generate_vpn_client_cert.sh #{hostname} #{server_ip}`
+    script_path = File.join(File.dirname(__FILE__), 'generate_vpn_client_cert.sh')
+    `sudo #{script_path} #{hostname} #{server_ip}`
   end
 
 

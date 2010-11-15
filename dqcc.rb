@@ -1,5 +1,5 @@
 # add script path to search path
-$: << File.dirname( __FILE__)
+$: << File.dirname(__FILE__)
 
 # config
 require 'config'
