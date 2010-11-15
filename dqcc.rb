@@ -1,30 +1,10 @@
-#!/usr/bin/env ruby
-#
-# DrQueueCloudControl
-#
-# supervise render sesions and control slaves / cloud VMs
-#
-# Copyright (C) 2010 Andreas Schroeder
-#
 
 # config
-require 'config'
 include DQCCconfig
 
-# database functionality
-require 'db_func'
-include DQCCdb
 
-# DrQueue functionality
-require 'queue_func'
-include DQCCqueue
-
-# for hash computation
-require 'digest/md5'
-
-
-while 1
-  puts "* waiting a while"
+loop do
+  puts "\n* waiting a while"
   sleep DQCCconfig.sleep_interval
 
   # fetch running slaves, registered in DrQueue and EC2
@@ -85,7 +65,7 @@ while 1
         rs.time_passed = 1
       elsif (rs.time_passed > 0) && (rs.stop_timestamp > 0)
         # continue counting when a job is active again
-        puts "INFO: Sessions continues. "+rs.time_passed.to_s+" sec passed by so far."
+        puts "INFO: Session continues. "+rs.time_passed.to_s+" sec passed by so far."
         rs.start_timestamp = Time.now.to_i
         rs.stop_timestamp = 0
         rs.overall_time_passed += rs.time_passed

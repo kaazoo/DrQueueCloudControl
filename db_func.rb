@@ -1,15 +1,5 @@
 module DQCCdb
 
-  # config
-  require 'config'
-  include DQCCconfig
-
-  # for database connectivity
-  require 'active_record'
-
-  # for hash computation
-  require 'digest/md5'
-
 
   class Job < ActiveRecord::Base
     belongs_to :profile
@@ -63,7 +53,8 @@ module DQCCdb
     #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
-    return Rendersession.find(:all)
+    # fetch all paid and owned rendersessions
+    return Rendersession.find(:all, :conditions => "payment_id > 0 AND profile_id > 0")
   end
 
 

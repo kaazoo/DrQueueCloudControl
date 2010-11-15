@@ -1,18 +1,5 @@
 module DQCCcloud
 
-  # for EC2 control
-  require 'AWS'
-
-  # for hash computation
-  require 'digest/md5'
-
-  # for Base64 encodig
-  require 'base64'
-
-  # config
-  require 'config'
-  include DQCCconfig
-
 
   # create slave VM instance
   def start_vm(user_hash, vm_type, pool_list)
