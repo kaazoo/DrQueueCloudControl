@@ -1,5 +1,15 @@
 module DQCCdb
 
+  # config
+  require 'config'
+  include DQCCconfig
+
+  # for database connectivity
+  require 'active_record'
+
+  # for hash computation
+  require 'digest/md5'
+
 
   class Job < ActiveRecord::Base
     belongs_to :profile

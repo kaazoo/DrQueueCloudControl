@@ -1,5 +1,16 @@
 module DQCCqueue
 
+# config
+require 'config'
+include DQCCconfig
+
+# cloud functionality
+require 'cloud_func'
+include DQCCcloud
+
+# for DrQueue control
+require 'drqueue'
+
 
   class SlaveVM
     attr_accessor :instance_id, :instance_type, :owner, :hostname, :public_dns, :private_dns, :private_ip, :queue_info, :state, :parked_at

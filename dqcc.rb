@@ -1,10 +1,22 @@
+# add script path to search path
+$: << File.dirname( __FILE__)
 
 # config
+require 'config'
 include DQCCconfig
+
+# database functionality
+require 'db_func'
+include DQCCdb
+
+# DrQueue functionality
+require 'queue_func'
+include DQCCqueue
 
 
 loop do
   puts "\n* waiting a while"
+  puts "DEBUG MEMORY: "+`pmap #{Process.pid} | tail -1`
   sleep DQCCconfig.sleep_interval
 
   # fetch running slaves, registered in DrQueue and EC2

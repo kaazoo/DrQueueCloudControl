@@ -9,7 +9,6 @@
 require 'rubygems'
 require 'daemons'
 
-require 'config'
 
 options = {
     :app_name   => "dqcc",
