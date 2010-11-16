@@ -84,13 +84,21 @@ loop do
         rs.time_passed = 0
       else
         # update time counter
-        puts "INFO: Time passed: "+rs.time_passed.to_s+" sec. Overall time passed: "+rs.overall_time_passed.to_s
         rs.time_passed = Time.now.to_i - rs.start_timestamp
+        # add to overall time every 1800 seconds in case daemon dies
+        if rs.time_passed > 1800
+          rs.overall_time_passed += 1800
+          rs.time_passed -= 1800
+        end
+        otp_hours = (rs.overall_time_passed/3600).to_i
+        otp_minutes = (rs.overall_time_passed/60 - otp_hours * 60).to_i
+        otp_seconds = (rs.overall_time_passed - (otp_minutes * 60 + otp_hours * 3600)).to_i
+        puts "INFO: Time passed: "+rs.time_passed.to_s+" sec. Overall time passed: "+"%02d"%otp_hours+":"+"%02d"%otp_minutes+":"+"%02d"%otp_seconds
       end
       rs.save!
 
-      # look if there is time left
-      if (time_left = rs.run_time - rs.overall_time_passed) > 0
+      # look if there is time left (in seconds)
+      if (time_left = rs.run_time * 3600 - (rs.overall_time_passed + rs.time_passed) > 0
         puts "INFO: There is time left in session "+rs.id.to_s+"."
         # check if slaves are running
         running_slaves = DQCCqueue.get_user_slaves(user_hash).length
