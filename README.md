@@ -23,12 +23,15 @@ Usage
 -----
 
 * Start daemon:
+
     $ ruby dqcc_daemon.rb start
 
 * Stop daemon:
+
     $ ruby dqcc_daemon.rb stop
 
 * Show status:
+
     $ ruby dqcc_daemon.rb status
 
 Useful debugging output is written to 'dqcc.output'.
