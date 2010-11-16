@@ -98,7 +98,7 @@ loop do
       rs.save!
 
       # look if there is time left (in seconds)
-      if (time_left = rs.run_time * 3600 - (rs.overall_time_passed + rs.time_passed) > 0
+      if (time_left = rs.run_time * 3600 - (rs.overall_time_passed + rs.time_passed)) > 0
         puts "INFO: There is time left in session "+rs.id.to_s+"."
         # check if slaves are running
         running_slaves = DQCCqueue.get_user_slaves(user_hash).length
