@@ -80,7 +80,7 @@ module DQCCconfig
   # DrQueue environment
   ENV['DRQUEUE_MASTER'] ||= '127.0.0.1'
   ENV['DRQUEUE_ROOT'] ||= '/usr/local/drqueue'
-  ENV['DRQUEUE_MASTER_FOR_VMS'] ||= self.local_ip
+  ENV['DRQUEUE_MASTER_FOR_VMS'] ||= '10.1.0.1'
 
   # EC2 environment
   ENV['AMAZON_ACCESS_KEY_ID'] ||= 'YOUR_ACCESS_KEY_ID'

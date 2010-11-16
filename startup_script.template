@@ -18,8 +18,8 @@ sleep 5
 mkdir /usr/local/drqueue/tmp/REPL_USERDIR
 
 # mount shared storage
-mount.cifs //10.1.0.1/tmp/REPL_USERDIR /usr/local/drqueue/tmp/REPL_USERDIR -o guest,rw,uid=drqueue
-mount.cifs //10.1.0.1/logs /usr/local/drqueue/logs -o guest,rw,uid=drqueue
+mount.cifs //REPL_MASTER/tmp/REPL_USERDIR /usr/local/drqueue/tmp/REPL_USERDIR -o guest,rw,uid=drqueue
+mount.cifs //REPL_MASTER/logs /usr/local/drqueue/logs -o guest,rw,uid=drqueue
 
 sleep 5
 
