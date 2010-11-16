@@ -9,27 +9,27 @@ DQCC uses the Rubygems 'drqueue', 'activerecord', 'amazon-ec2' and 'daemons'.
 Installation
 ------------
 
-  $ gem install drqueue activerecord amazon-ec2 daemons
-  $ useradd drqueuecloudcontrol
-  $ su drqueuecloudcontrol -
-  $ cd
-  $ git clone https://github.com/kaazoo/DrQueueCloudControl.git
-  $ cd DrQueueCloudControl
-  $ cp config.rb.example config.rb
-  (edit config)
+    $ gem install drqueue activerecord amazon-ec2 daemons
+    $ useradd drqueuecloudcontrol
+    $ su drqueuecloudcontrol -
+    $ cd
+    $ git clone https://github.com/kaazoo/DrQueueCloudControl.git
+    $ cd DrQueueCloudControl
+    $ cp config.rb.example config.rb
+    (edit config)
 
 
 Usage
 -----
 
 * Start daemon:
-  $ ruby dqcc_daemon.rb start
+    $ ruby dqcc_daemon.rb start
 
 * Stop daemon:
-  $ ruby dqcc_daemon.rb stop
+    $ ruby dqcc_daemon.rb stop
 
 * Show status:
-  $ ruby dqcc_daemon.rb status
+    $ ruby dqcc_daemon.rb status
 
 Useful debugging output is written to 'dqcc.output'.
 
