@@ -40,7 +40,7 @@ Useful debugging output is written to 'dqcc.output'.
 Documentation
 -------------
 
-Create rdoc HTML files in directory 'rdoc':
+Create documentation HTML files in directory 'doc':
 
     $ rdoc --main dqcc_daemon.rb -a
 
