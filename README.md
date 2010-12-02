@@ -37,6 +37,14 @@ Show status:
 Useful debugging output is written to 'dqcc.output'.
 
 
+Documentation
+-------------
+
+Create rdoc HTML files in directory 'rdoc':
+
+    $ rdoc --main dqcc_daemon.rb -a
+
+
 License
 -------
 

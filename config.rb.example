@@ -65,15 +65,19 @@ module DQCCconfig
   attr :pool_types
   @pool_types = ['blender', 'maya', 'cinema4d']
 
-  # DQOR database config
+  # DQOR database type
   attr :db_dqor_adapter
   @db_dqor_adapter = "mysql"
+  # DQOR database name
   attr :db_dqor_name
   @db_dqor_name = "drqueueonrails"
+  # DQOR database username
   attr :db_dqor_user
   @db_dqor_user = "dqcc"
+  # DQOR database password
   attr :db_dqor_pw
   @db_dqor_pw = "foobar"
+  # DQOR database hostname
   attr :db_dqor_host
   @db_dqor_host = "localhost"
 
