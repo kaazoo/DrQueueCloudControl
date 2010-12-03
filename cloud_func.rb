@@ -185,7 +185,7 @@ module DQCCcloud
   def lookup_vpn_ip(private_ip)
     puts "DEBUG: lookup_vpn_ip("+private_ip+")"
 
-    vpn_ip = `grep #{vpn_ip} /etc/openvpn/openvpn-status.log`.split("\n")[1].split(",")[0]
+    vpn_ip = `grep #{private_ip} /etc/openvpn/openvpn-status.log`.split("\n")[1].split(",")[0]
     return vpn_ip
   end
 
