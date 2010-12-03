@@ -252,7 +252,7 @@ require 'drqueue'
     # work on a number of parked slaves
     if (user_slaves = get_user_slaves(user_hash)).length > 0
       0.upto(diff - 1) do |i|
-        if(vm = search_registered_vm_by_address(user_slaves[i].hwinfo.address)) == false
+        if(vm = search_registered_vm_by_address(lookup_private_ip(user_slaves[i].hwinfo.address))) == false
           puts "DEBUG: search_registered_vm_by_address() returned false. Skipping this one."
           next
         end

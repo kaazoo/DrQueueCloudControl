@@ -109,7 +109,7 @@ module DQCCcloud
               new_vm.public_dns = instance.dnsName
               new_vm.private_dns = instance.privateDnsName
               new_vm.private_ip = instance.privateIpAddress
-              new_vm.queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+              new_vm.queue_info = DQCCqueue.get_slave_info(lookup_vpn_ip(instance.privateIpAddress))
               if new_vm.queue_info == nil
                 puts "ERROR: Could not get queue info of VM "+instance.instanceId+". Skipping this one."
                 next
@@ -169,6 +169,24 @@ module DQCCcloud
     ### TODO: check for valid values as this goes directly to a shell
     script_path = File.join(File.dirname(__FILE__), 'generate_vpn_client_cert.sh')
     `sudo #{script_path} #{hostname} #{server_ip}`
+  end
+
+
+  # look up private VM IP address of VPN client
+  def lookup_private_ip(vpn_ip)
+    puts "DEBUG: lookup_private_ip("+vpn_ip+")"
+
+    private_ip = `grep #{vpn_ip} /etc/openvpn/openvpn-status.log`.split(",")[2].split(":")[0]
+    return private_ip
+  end
+
+
+  # look up VPN IP address of VM
+  def lookup_vpn_ip(private_ip)
+    puts "DEBUG: lookup_vpn_ip("+private_ip+")"
+
+    vpn_ip = `grep #{vpn_ip} /etc/openvpn/openvpn-status.log`.split("\n")[1].split(",")[0]
+    return vpn_ip
   end
 
 
