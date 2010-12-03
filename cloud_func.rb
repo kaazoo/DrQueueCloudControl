@@ -139,7 +139,7 @@ module DQCCcloud
   end
 
 
-  # look if an instance_id is already in the list
+  # look if an address is already in the list
   def search_registered_vm_by_address(address)
     if $slave_vms != nil
       $slave_vms.each do |reg_vm|
@@ -160,6 +160,75 @@ module DQCCcloud
     script_path = File.join(File.dirname(__FILE__), 'generate_vpn_client_cert.sh')
     `sudo #{script_path} #{hostname} #{server_ip}`
   end
+
+
+  # create a new EBS volume
+  def register_ebs_volume(size)
+    puts "DEBUG: register_ebs_volume("+size.to_s+")"
+
+    # connect to EC2
+    ec2 = AWS::EC2::Base.new(:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY'])
+
+    vol = @ec2.create_volume({:availability_zone => 'eu-west-1a', :size => size.to_s})
+
+    return vol
+  end
+
+
+  # provision newly created volume
+  def prepare_ebs_storage(vol_id)
+    puts "DEBUG: prepare_ebs_storage("+vol_id.to_s+")"
+
+    # connect to EC2
+    ec2 = AWS::EC2::Base.new(:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY'])
+
+    # wait until volume is ready
+    loop do
+      vol = @ec2.describe_volumes({:volume_id => vol_id})
+      if vol.status == "available"
+        break
+      end
+      sleep 2
+    end
+
+    # fetch instance id of running VM
+    local_instance_id = `curl http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null`
+
+    # build device name
+    loop do
+      srand
+      chars = ("d".."z").to_a
+      rand_char = chars[rand(chars.length-1)]
+      device_name = "/dev/sd" + rand_char
+      # check if it's not yet existing
+      if `blkid`.include?device_name == false
+        break
+      end
+      sleep 1
+    end
+
+    # encryption input
+    enc_input = DQCCconfig.ebs_encryption_salt
+
+    # attach volume
+    @ec2.attach_volume({:volume_id => vol_id, :instance_id => local_instance_id, :device => device_name})
+
+    # encrypted attached volume for user
+    script_path = File.join(File.dirname(__FILE__), 'encrypt_user_volume.sh')
+    `sudo #{script_path} #{device} #{user_hash} #{enc_input}`
+  end
+
+
+  # create a encrypted storage volume for a user
+  def create_secure_storage(user_hash, size)
+    puts "DEBUG: create_secure_storage("+user_hash.to_s+", "+size.to_s+")"
+
+    vol = register_ebs_volume(size)
+    prepare_ebs_volume(vol.volumeId)
+  end
+
+
+
 
 
 end
