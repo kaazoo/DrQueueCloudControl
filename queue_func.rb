@@ -70,7 +70,7 @@ require 'drqueue'
     park_list = []
 
     $slave_vms.each do |vm|
-      if (vm.queue_info != nil) && (concat_pool_names(vm.queue_info).include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type) && (vm.owner == owner)
+      if (vm.queue_info != nil) && (concat_pool_names_of_computer(vm.queue_info).include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type) && (vm.owner == owner)
         park_list << vm
       end
     end
@@ -87,7 +87,7 @@ require 'drqueue'
     park_list = []
 
     $slave_vms.each do |vm|
-      if (vm.queue_info != nil) && (concat_pool_names(vm.queue_info).include? DQCCconfig.parking_pool)
+      if (vm.queue_info != nil) && (concat_pool_names_of_computer(vm.queue_info).include? DQCCconfig.parking_pool)
         park_list << vm
       end
     end
@@ -121,7 +121,7 @@ require 'drqueue'
     user_list = []
 
     $slave_list.each do |computer|
-      if concat_pool_names(computer).include? user_hash
+      if concat_pool_names_of_computer(computer).include? user_hash
         user_list << computer
       end
     end
@@ -218,8 +218,8 @@ require 'drqueue'
       # work on a number of parked slaves
       0.upto(usable - 1) do |i|
         # add to user pool(s)
-        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.hwinfo.name+"\" to pools \""+concat_pool_names(user_hash)+"\"."
-        set_slave_pool(parked_slaves[i].queue_info, concat_pool_names(user_hash))
+        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.hwinfo.name+"\" to pools \""+concat_pool_names_of_user(user_hash)+"\"."
+        set_slave_pool(parked_slaves[i].queue_info, concat_pool_names_of_user(user_hash))
         # update queue info
         parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].private_ip)
       end
@@ -234,7 +234,7 @@ require 'drqueue'
     if remaining > 0
       0.upto(remaining - 1) do |i|
         # start up new slave VM
-        slave = DQCCcloud.start_vm(user_hash, vm_type, concat_pool_names(user_hash))
+        slave = DQCCcloud.start_vm(user_hash, vm_type, concat_pool_names_of_user(user_hash))
         if slave == nil
           puts "ERROR: Failed to start VM."
         end
@@ -298,8 +298,8 @@ require 'drqueue'
 
 
   # concat poolnames a computer is belonging to
-  def concat_pool_names(computer)
-    puts "DEBUG: concat_pool_names("+computer.hwinfo.name+")"
+  def concat_pool_names_of_computer(computer)
+    puts "DEBUG: concat_pool_names_of_computer("+computer.hwinfo.name+")"
 
     pools = ''
     np_max = computer.limits.npools - 1
@@ -315,8 +315,8 @@ require 'drqueue'
 
 
   # concat all possible poolnames for a user
-  def concat_pool_names(user_hash)
-    puts "DEBUG: concat_pool_names("+user_hash.to_s+")"
+  def concat_pool_names_of_user(user_hash)
+    puts "DEBUG: concat_pool_names_of_user("+user_hash.to_s+")"
 
     pool_string = ""
     count = DQCCconfig.pool_types.length
