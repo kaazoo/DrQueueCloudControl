@@ -30,6 +30,7 @@ module DQCCdb
   end
 
 
+  # connect to DQOR database
   def db_connect_dqor
     ActiveRecord::Base.establish_connection(
       :adapter  => DQCCconfig.db_dqor_adapter,
@@ -40,27 +41,22 @@ module DQCCdb
   end
 
 
-  def db_connect_dqor_test
-    ActiveRecord::Base.establish_connection(:adapter => 'sqlite3', :database => '../DrQueueOnRails/db/DrQueueOnRails_development.sqlite3')
-  end
-
-
+  # return list of all jobs known to DQOR
   def fetch_job_list
     puts "DEBUG: fetch_job_list()"
 
     db_connect_dqor
-    #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     return Job.find(:all)
   end
 
 
+  # return list of all rendersessions
   def fetch_rendersession_list
     puts "DEBUG: fetch_rendersession_list()"
 
     db_connect_dqor
-    #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     # fetch all paid and owned rendersessions
@@ -68,11 +64,11 @@ module DQCCdb
   end
 
 
+  # return info about job owner
   def fetch_user_data(job_id)
     puts "DEBUG: fetch_user_data("+job_id.to_s+")"
 
     db_connect_dqor
-    #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     job = Job.find(job_id)
@@ -81,11 +77,11 @@ module DQCCdb
   end
 
 
+  # return list of jobs belonging to a rendersession
   def fetch_rendersession_job_list(rendersession_id)
     puts "DEBUG: fetch_rendersession_job_list("+rendersession_id.to_s+")"
 
     db_connect_dqor
-    #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     rs = Rendersession.find(rendersession_id)
@@ -96,11 +92,11 @@ module DQCCdb
   end
 
 
+  # return active rendersessions of user
   def find_rendersession(user_hash)
     puts "DEBUG: find_rendersession("+user_hash+")"
 
     db_connect_dqor
-    #db_connect_dqor_test
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     needed_pm = nil
