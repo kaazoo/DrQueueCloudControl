@@ -110,6 +110,10 @@ module DQCCcloud
               new_vm.private_dns = instance.privateDnsName
               new_vm.private_ip = instance.privateIpAddress
               new_vm.queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+              if new_vm.queue_info == nil
+                puts "ERROR: Could not get queue info of VM "+instance.instanceId+". Skipping this one."
+                next
+              end
               new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm.queue_info)
               new_vm.state = instance.instanceState.name
               registered_vms << new_vm

@@ -142,7 +142,7 @@ require 'drqueue'
         break
       end
     end
-    slave_list = ""
+    #slave_list = ""
 
     return slave_info
   end
@@ -150,6 +150,7 @@ require 'drqueue'
 
   # return user of a slave by it's poolnames
   def get_owner_from_pools(slave)
+    puts "DEBUG: get_owner_from_pools("+slave.to_s+")"
     pool = slave.limits.get_pool(0).name
     user_hash = pool.split("_")[0]
 
