@@ -14,10 +14,16 @@ require 'queue_func'
 include DQCCqueue
 
 
-loop do
+# sleep a while
+def tea_break
   puts "\n* waiting a while"
   puts "DEBUG MEMORY: "+`pmap #{Process.pid} | tail -1`
   sleep DQCCconfig.sleep_interval
+end
+
+
+loop do
+  tea_break
 
   # fetch running slaves, registered in DrQueue and EC2
   $slave_list = DQCCqueue.fetch_slave_list
@@ -31,6 +37,14 @@ loop do
 
     # fetch list of all belonging jobs
     job_list = DQCCdb.fetch_rendersession_job_list(rs.id)
+
+    # skip this rendersession if not used
+    if job_list.length == 0
+      puts "DEBUG: rendersession not used yet. Skipping this one."
+      next
+    end
+
+    # fetch queue info for each job and check status
     job_list.each do |job|
       queue_info = DQCCqueue.fetch_queue_info(job.queue_id)
       if queue_info == nil
@@ -43,15 +57,11 @@ loop do
       end
     end
 
-    # skip this rendersession if not used
-    if job_list.length == 0
-      break
-    end
-
     # get needed info about job owner
     user_data = DQCCdb.fetch_user_data(job_list[0].id)
     user_hash = Digest::MD5.hexdigest(user_data.ldap_account)
 
+    # remove eventually running slaves of this session
     if running_jobs.length == 0
       puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". Removing all slaves."
       # remove all slaves
@@ -62,14 +72,13 @@ loop do
         puts "INFO: Setting stop timestamp to: "+rs.stop_timestamp.to_s+"."
         rs.save!
       end
-      break
+      next
     else
       puts "INFO: There are "+running_jobs.length.to_s+" running jobs in rendersession "+rs.id.to_s+"."
     end
 
     # cycle through all running jobs
     running_jobs.each do |job|
-
       if (rs.time_passed == 0) && (rs.overall_time_passed == 0)
         # start time counter
         puts "INFO: Session starts now."
