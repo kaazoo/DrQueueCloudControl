@@ -130,6 +130,8 @@ module DQCCcloud
 
   # look if an instance_id is already in the list
   def search_registered_vm_by_instance_id(instance_id)
+    puts "DEBUG: search_registered_vm_by_instance_id("+instance_id+")"
+
     if $slave_vms != nil
       $slave_vms.each do |reg_vm|
         if reg_vm.instance_id == instance_id
@@ -145,6 +147,8 @@ module DQCCcloud
 
   # look if an address is already in the list
   def search_registered_vm_by_address(address)
+    puts "DEBUG: search_registered_vm_by_address("+address+")"
+
     if $slave_vms != nil
       $slave_vms.each do |reg_vm|
         if reg_vm.private_ip == address
@@ -160,6 +164,8 @@ module DQCCcloud
 
   # create a special vpn certificate for slave
   def prepare_vpn_cert(hostname, server_ip)
+    puts "DEBUG: prepare_vpn_cert("+hostname+", "+server_ip+")"
+
     ### TODO: check for valid values as this goes directly to a shell
     script_path = File.join(File.dirname(__FILE__), 'generate_vpn_client_cert.sh')
     `sudo #{script_path} #{hostname} #{server_ip}`
