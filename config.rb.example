@@ -65,6 +65,10 @@ module DQCCconfig
   attr :pool_types
   @pool_types = ['blender', 'maya', 'cinema4d']
 
+  # encryption salt for EBS volumes
+  attr :ebs_encryption_salt
+  @ebs_encryption_salt = "31c6772642cb2dce5a34f0a702f9470dd"
+
   # DQOR database type
   attr :db_dqor_adapter
   @db_dqor_adapter = "mysql"
