@@ -100,9 +100,9 @@ module DQCCcloud
               reg_vm.public_dns = instance.dnsName
               reg_vm.private_dns = instance.privateDnsName
               reg_vm.private_ip = instance.privateIpAddress
-              new_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
-              new_vm.queue_info = DQCCqueue.get_slave_info(new_vm.vpn_ip)
-              if new_vm.queue_info == nil
+              reg_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
+              reg_vm.queue_info = DQCCqueue.get_slave_info(reg_vm.vpn_ip)
+              if reg_vm.queue_info == nil
                 puts "ERROR: Could not get queue info of VM "+instance.instanceId+". Skipping this one."
                 next
               end

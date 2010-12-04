@@ -40,7 +40,7 @@ loop do
 
     # skip this rendersession if not used
     if job_list.length == 0
-      puts "DEBUG: rendersession not used yet. Skipping this one."
+      puts "INFO: Rendersession "rs.id.to_s+" isn't in use yet. Skipping this one."
       next
     end
 
