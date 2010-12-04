@@ -13,7 +13,7 @@ require 'drqueue'
 
 
   class SlaveVM
-    attr_accessor :instance_id, :instance_type, :owner, :hostname, :public_dns, :private_dns, :private_ip, :vpn_ip, :queue_info, :state, :parked_at
+    attr_accessor :instance_id, :instance_type, :owner, :hostname, :public_dns, :private_dns, :private_ip, :vpn_ip, :queue_info, :state, :parked_at, :pool_name_list
 
     def initialize(instance_id, instance_type, owner)
       @instance_id = instance_id
@@ -27,6 +27,7 @@ require 'drqueue'
       @queue_info = nil
       @state = "pending"
       @parked_at = nil
+      @pool_name_list = nil
     end
   end
 
@@ -71,7 +72,7 @@ require 'drqueue'
     park_list = []
 
     $slave_vms.each do |vm|
-      if (vm.queue_info != nil) && (concat_pool_names_of_computer(vm.queue_info).include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type) && (vm.owner == owner)
+      if (vm.queue_info != nil) && (vm.pool_name_list.include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type) && (vm.owner == owner)
         park_list << vm
       end
     end
@@ -88,7 +89,7 @@ require 'drqueue'
     park_list = []
 
     $slave_vms.each do |vm|
-      if (vm.queue_info != nil) && (concat_pool_names_of_computer(vm.queue_info).include? DQCCconfig.parking_pool)
+      if (vm.queue_info != nil) && (vm.pool_name_list.include? DQCCconfig.parking_pool)
         park_list << vm
       end
     end
@@ -114,16 +115,16 @@ require 'drqueue'
   end
 
 
-  # return list of all slaves belonging to a user
+  # return list of all slave VMs belonging to a user
   def get_user_slaves(user_hash)
     puts "DEBUG: get_user_slaves("+user_hash.to_s+")"
 
-    # walk through list and look for hash in pool name
+    # walk through list and look for hash in pool names
     user_list = []
 
-    $slave_list.each do |computer|
-      if concat_pool_names_of_computer(computer).include? user_hash
-        user_list << computer
+    $slave_vms.each do |vm|
+      if vm.pool_name_list.include? user_hash
+        user_list << vm
       end
     end
 
@@ -258,13 +259,13 @@ require 'drqueue'
     # work on a number of parked slaves
     if (user_slaves = get_user_slaves(user_hash)).length > 0
       0.upto(diff - 1) do |i|
-        if(vm = search_registered_vm_by_address(user_slaves[i].hwinfo.address)) == false
-          puts "DEBUG: search_registered_vm_by_address() returned false. Skipping this one."
+        if(vm = search_registered_vm_by_address(user_slaves[i].vpn_ip)) == nil
+          puts "DEBUG: search_registered_vm_by_address() failed. Skipping this one."
           next
         end
         if vm.instance_type == vm_type
           # add slaves to parking pool
-          set_slave_pool(user_slaves[i], DQCCconfig.parking_pool)
+          set_slave_pool(user_slaves[i].queue_info, DQCCconfig.parking_pool)
           # save parking time
           vm.parked_at = Time.now.to_i
         end
@@ -307,6 +308,10 @@ require 'drqueue'
   # concat poolnames a computer is belonging to
   def concat_pool_names_of_computer(computer)
     puts "DEBUG: concat_pool_names_of_computer("+computer.hwinfo.name+")"
+
+    if computer == nil
+      return ''
+    end
 
     pools = ''
     np_max = computer.limits.npools - 1

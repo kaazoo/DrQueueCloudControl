@@ -108,6 +108,7 @@ module DQCCcloud
               if reg_vm.queue_info == nil
                 puts "DEBUG: Could not get queue info of VM "+instance.instanceId+"."
               end
+              reg_vm.pool_name_list = concat_pool_names_of_computer(reg_vm.queue_info)
               reg_vm.state = instance.instanceState.name
             else
               # create new entry because VM was running before DQCC daemon (possibly crashed)
@@ -129,6 +130,7 @@ module DQCCcloud
                 puts "DEBUG: Could not look up owner of VM "+instance.instanceId+"."
               end
               new_vm.state = instance.instanceState.name
+              new_vm.pool_name_list = concat_pool_names_of_computer(new_vm.queue_info)
               registered_vms << new_vm
             end
         else
@@ -171,7 +173,7 @@ module DQCCcloud
       end
     end
     # not found
-    return false
+    return nil
   end
 
 
