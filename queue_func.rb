@@ -152,6 +152,11 @@ require 'drqueue'
   # return user of a slave by it's poolnames
   def get_owner_from_pools(slave)
     puts "DEBUG: get_owner_from_pools("+slave.to_s+")"
+
+    if slave == nil
+      return nil
+    end
+
     pool = slave.limits.get_pool(0).name
     user_hash = pool.split("_")[0]
 

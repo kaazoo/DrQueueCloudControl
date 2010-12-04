@@ -108,6 +108,10 @@ module DQCCcloud
               if reg_vm.queue_info == nil
                 puts "DEBUG: Could not get queue info of VM "+instance.instanceId+"."
               end
+              reg_vm.owner = DQCCqueue.get_owner_from_pools(reg_vm.queue_info)
+              if reg_vm.owner == nil
+                puts "DEBUG: Could not look up owner of VM "+instance.instanceId+"."
+              end
               reg_vm.state = instance.instanceState.name
             else
               # create new entry
@@ -125,6 +129,9 @@ module DQCCcloud
                 puts "DEBUG: Could not get queue info of VM "+instance.instanceId+"."
               end
               new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm.queue_info)
+              if new_vm.owner == nil
+                puts "DEBUG: Could not look up owner of VM "+instance.instanceId+"."
+              end
               new_vm.state = instance.instanceState.name
               registered_vms << new_vm
             end
