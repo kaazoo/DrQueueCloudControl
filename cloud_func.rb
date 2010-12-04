@@ -204,7 +204,13 @@ module DQCCcloud
       return nil
     end
 
-    vpn_ip = `grep #{private_ip} /etc/openvpn/openvpn-status.log`.split("\n")[1].split(",")[0]
+    # log entry can be missing if VPN client is not yet connected
+    entry = `grep #{private_ip} /etc/openvpn/openvpn-status.log`.split("\n")[1]
+    if entry == nil
+      return nil
+    end
+
+    vpn_ip = entry.split(",")[0]
     return vpn_ip
   end
 
