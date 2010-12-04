@@ -36,7 +36,8 @@ module DQCCcloud
 
     # keep VM info
     slave = SlaveVM.new(instance_data.instancesSet.item[0].instanceId, instance_data.instancesSet.item[0].instanceType, user_hash)
-    puts slave.hostname = hostname
+    slave.hostname = hostname
+    slave.pool_name_list = pool_list
 
     # append slave VM to list of known VMs
     $slave_vms << slave

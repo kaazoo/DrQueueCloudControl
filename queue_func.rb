@@ -144,7 +144,6 @@ require 'drqueue'
         break
       end
     end
-    #slave_list = ""
 
     return slave_info
   end
