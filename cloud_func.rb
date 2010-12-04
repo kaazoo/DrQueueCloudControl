@@ -108,13 +108,9 @@ module DQCCcloud
               if reg_vm.queue_info == nil
                 puts "DEBUG: Could not get queue info of VM "+instance.instanceId+"."
               end
-              reg_vm.owner = DQCCqueue.get_owner_from_pools(reg_vm.queue_info)
-              if reg_vm.owner == nil
-                puts "DEBUG: Could not look up owner of VM "+instance.instanceId+"."
-              end
               reg_vm.state = instance.instanceState.name
             else
-              # create new entry
+              # create new entry because VM was running before DQCC daemon (possibly crashed)
               puts "INFO: VM "+instance.instanceId+" is not known. Creating new entry."
               new_vm = SlaveVM.new(instance.instanceId, instance.instanceType, nil)
               new_vm.public_dns = instance.dnsName
@@ -136,7 +132,7 @@ module DQCCcloud
               registered_vms << new_vm
             end
         else
-          puts "INFO: VM "+instance.instanceId+" is not usable."
+          puts "DEBUG: VM "+instance.instanceId+" is not usable."
         end
       end
     end
