@@ -100,7 +100,12 @@ module DQCCcloud
               reg_vm.public_dns = instance.dnsName
               reg_vm.private_dns = instance.privateDnsName
               reg_vm.private_ip = instance.privateIpAddress
-              reg_vm.queue_info = DQCCqueue.get_slave_info(instance.privateIpAddress)
+              new_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
+              new_vm.queue_info = DQCCqueue.get_slave_info(new_vm.vpn_ip)
+              if new_vm.queue_info == nil
+                puts "ERROR: Could not get queue info of VM "+instance.instanceId+". Skipping this one."
+                next
+              end
               reg_vm.state = instance.instanceState.name
             else
               # create new entry
@@ -109,7 +114,8 @@ module DQCCcloud
               new_vm.public_dns = instance.dnsName
               new_vm.private_dns = instance.privateDnsName
               new_vm.private_ip = instance.privateIpAddress
-              new_vm.queue_info = DQCCqueue.get_slave_info(lookup_vpn_ip(instance.privateIpAddress))
+              new_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
+              new_vm.queue_info = DQCCqueue.get_slave_info(new_vm.vpn_ip)
               if new_vm.queue_info == nil
                 puts "ERROR: Could not get queue info of VM "+instance.instanceId+". Skipping this one."
                 next
@@ -151,7 +157,7 @@ module DQCCcloud
 
     if $slave_vms != nil
       $slave_vms.each do |reg_vm|
-        if reg_vm.private_ip == address
+        if reg_vm.vpn_ip == address
           # found
           return reg_vm
         end

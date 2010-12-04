@@ -13,7 +13,7 @@ require 'drqueue'
 
 
   class SlaveVM
-    attr_accessor :instance_id, :instance_type, :owner, :hostname, :public_dns, :private_dns, :private_ip, :queue_info, :state, :parked_at
+    attr_accessor :instance_id, :instance_type, :owner, :hostname, :public_dns, :private_dns, :private_ip, :vpn_ip, :queue_info, :state, :parked_at
 
     def initialize(instance_id, instance_type, owner)
       @instance_id = instance_id
@@ -23,6 +23,7 @@ require 'drqueue'
       @public_dns = nil
       @private_dns = nil
       @private_ip = nil
+      @vpn_ip = nil
       @queue_info = nil
       @state = "pending"
       @parked_at = nil
@@ -222,7 +223,7 @@ require 'drqueue'
         puts "INFO: I will add slave \""+parked_slaves[i].queue_info.hwinfo.name+"\" to pools \""+concat_pool_names_of_user(user_hash)+"\"."
         set_slave_pool(parked_slaves[i].queue_info, concat_pool_names_of_user(user_hash))
         # update queue info
-        parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].private_ip)
+        parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].vpn_ip)
       end
       if remaining >= usable
         remaining -= usable
@@ -252,7 +253,7 @@ require 'drqueue'
     # work on a number of parked slaves
     if (user_slaves = get_user_slaves(user_hash)).length > 0
       0.upto(diff - 1) do |i|
-        if(vm = search_registered_vm_by_address(lookup_private_ip(user_slaves[i].hwinfo.address))) == false
+        if(vm = search_registered_vm_by_address(user_slaves[i].hwinfo.address)) == false
           puts "DEBUG: search_registered_vm_by_address() returned false. Skipping this one."
           next
         end
