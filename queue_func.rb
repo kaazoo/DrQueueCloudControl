@@ -306,7 +306,7 @@ require 'drqueue'
 
   # concat poolnames a computer is belonging to
   def concat_pool_names_of_computer(computer)
-    puts "DEBUG: concat_pool_names_of_computer("+computer.hwinfo.name+")"
+    puts "DEBUG: concat_pool_names_of_computer("+computer.to_s+")"
 
     if computer == nil
       return ''
