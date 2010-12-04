@@ -101,10 +101,12 @@ module DQCCcloud
               reg_vm.private_dns = instance.privateDnsName
               reg_vm.private_ip = instance.privateIpAddress
               reg_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
+              if reg_vm.vpn_ip == nil
+                puts "DEBUG: Could not look up VPN IP of VM "+instance.instanceId+"."
+              end
               reg_vm.queue_info = DQCCqueue.get_slave_info(reg_vm.vpn_ip)
               if reg_vm.queue_info == nil
-                puts "ERROR: Could not get queue info of VM "+instance.instanceId+". Skipping this one."
-                next
+                puts "DEBUG: Could not get queue info of VM "+instance.instanceId+"."
               end
               reg_vm.state = instance.instanceState.name
             else
@@ -115,10 +117,12 @@ module DQCCcloud
               new_vm.private_dns = instance.privateDnsName
               new_vm.private_ip = instance.privateIpAddress
               new_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
+              if new_vm.vpn_ip == nil
+                puts "DEBUG: Could not look up VPN IP of VM "+instance.instanceId+"."
+              end
               new_vm.queue_info = DQCCqueue.get_slave_info(new_vm.vpn_ip)
               if new_vm.queue_info == nil
-                puts "ERROR: Could not get queue info of VM "+instance.instanceId+". Skipping this one."
-                next
+                puts "DEBUG: Could not get queue info of VM "+instance.instanceId+"."
               end
               new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm.queue_info)
               new_vm.state = instance.instanceState.name
@@ -180,7 +184,11 @@ module DQCCcloud
 
   # look up private VM IP address of VPN client
   def lookup_private_ip(vpn_ip)
-    puts "DEBUG: lookup_private_ip("+vpn_ip+")"
+    puts "DEBUG: lookup_private_ip("+vpn_ip.to_s+")"
+
+    if vpn_ip == nil
+      return nil
+    end
 
     private_ip = `grep #{vpn_ip} /etc/openvpn/openvpn-status.log`.split(",")[2].split(":")[0]
     return private_ip
@@ -189,7 +197,12 @@ module DQCCcloud
 
   # look up VPN IP address of VM
   def lookup_vpn_ip(private_ip)
-    puts "DEBUG: lookup_vpn_ip("+private_ip+")"
+    puts "DEBUG: lookup_vpn_ip("+private_ip.to_s+")"
+
+    # private_ip can be nil if a VM has just been started
+    if private_ip == nil
+      return nil
+    end
 
     vpn_ip = `grep #{private_ip} /etc/openvpn/openvpn-status.log`.split("\n")[1].split(",")[0]
     return vpn_ip
