@@ -235,7 +235,7 @@ module DQCCcloud
 
 
   # provision newly created volume
-  def prepare_ebs_storage(vol_id)
+  def prepare_ebs_volume(vol_id)
     puts "DEBUG: prepare_ebs_storage("+vol_id.to_s+")"
 
     # connect to EC2
@@ -254,16 +254,22 @@ module DQCCcloud
     local_instance_id = `curl http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null`
 
     # build device name
-    loop do
-      srand
-      chars = ("d".."z").to_a
-      rand_char = chars[rand(chars.length-1)]
-      device_name = "/dev/sd" + rand_char
-      # check if it's not yet existing
-      if `blkid`.include?device_name == false
+    arr = ('d'..'z').to_a
+    found_free = false
+    arr.each do |arr_char|
+      device_name = "/dev/sd" + arr_char
+      # check if device is existing
+      if File.blockdev? device_name
+        next
+      else
+        found_free = true
         break
       end
-      sleep 1
+    end
+
+    # give up if all device names are taken
+    if found_free == false
+      return nil
     end
 
     # encryption input
@@ -272,7 +278,7 @@ module DQCCcloud
     # attach volume
     @ec2.attach_volume({:volume_id => vol_id, :instance_id => local_instance_id, :device => device_name})
 
-    # encrypted attached volume for user
+    # encrypt attached volume for user
     script_path = File.join(File.dirname(__FILE__), 'encrypt_user_volume.sh')
     `sudo #{script_path} #{device} #{user_hash} #{enc_input}`
   end
@@ -282,8 +288,13 @@ module DQCCcloud
   def create_secure_storage(user_hash, size)
     puts "DEBUG: create_secure_storage("+user_hash.to_s+", "+size.to_s+")"
 
+    # create new volume
     vol = register_ebs_volume(size)
-    prepare_ebs_volume(vol.volumeId)
+
+    # attach, encrypt and mount volume
+    if prepare_ebs_volume(vol.volumeId) == nil
+      puts "ERROR: Could not attach, encrypt or mount volume."
+    end
   end
 
 
