@@ -99,17 +99,8 @@ loop do
       else
         puts "INFO: I don't have to do anything for this job."
       end
-    # no time is left in the session
-    else
-      puts "INFO: I have to remove all slaves from session "+rs.id.to_s+"."
-      # remove all slaves
-      DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
-      # skip to next session
-      next
-    end
 
-    # cycle through all running jobs
-    running_jobs.each do |job|
+      # work on time counters
       if (rs.time_passed == 0) && (rs.overall_time_passed == 0)
         # start time counter
         puts "INFO: Session starts now."
@@ -136,7 +127,16 @@ loop do
         puts "INFO: Time passed: "+rs.time_passed.to_s+" sec. Overall time passed: "+"%02d"%otp_hours+":"+"%02d"%otp_minutes+":"+"%02d"%otp_seconds
       end
       rs.save!
+
+    # no time is left in the session
+    else
+      puts "INFO: I have to remove all slaves from session "+rs.id.to_s+"."
+      # remove all slaves
+      DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
+      # skip to next session
+      next
     end
+
   end
 
   # save resources
