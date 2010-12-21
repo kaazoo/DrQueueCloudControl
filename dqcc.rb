@@ -63,7 +63,7 @@ loop do
 
     # remove eventually running slaves of this session
     if running_jobs.length == 0
-      puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". Removing all slaves."
+      puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". Removing all slaves if any."
       # remove all slaves
       DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
       # update timestamps
@@ -72,9 +72,40 @@ loop do
         puts "INFO: Setting stop timestamp to: "+rs.stop_timestamp.to_s+"."
         rs.save!
       end
+      # skip to next session
       next
     else
       puts "INFO: There are "+running_jobs.length.to_s+" running jobs in rendersession "+rs.id.to_s+"."
+    end
+
+    # look if there is time left (in seconds)
+    if (time_left = rs.run_time * 3600 - (rs.overall_time_passed + rs.time_passed)) > 0
+      puts "INFO: There is time left in session "+rs.id.to_s+"."
+      # check if slaves are running
+      running_slaves = DQCCqueue.get_user_slaves(user_hash).length
+      diff = rs.num_slaves - running_slaves
+      max_diff = DQCCconfig.max_vms - $slave_vms.length
+      if diff > max_diff
+        puts "ERROR: Requested number of slaves exceeds maximum number of VMs. Will only add "+max_diff.to_s+" slaves."
+        DQCCqueue.add_slaves(user_hash, rs.vm_type, max_diff)
+      elsif diff > 0
+        puts "INFO: I have to add "+diff.to_s+" more slaves to session "+rs.id.to_s+"."
+        # add slaves
+        DQCCqueue.add_slaves(user_hash, rs.vm_type, diff)
+      elsif diff < 0
+        puts "INFO: I have to remove "+diff.abs.to_s+" slaves from session "+rs.id.to_s+"."
+        # remove slaves because there are more then defined
+        DQCCqueue.remove_slaves(user_hash, rs.vm_type, diff.abs)
+      else
+        puts "INFO: I don't have to do anything for this job."
+      end
+    # no time is left in the session
+    else
+      puts "INFO: I have to remove all slaves from session "+rs.id.to_s+"."
+      # remove all slaves
+      DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
+      # skip to next session
+      next
     end
 
     # cycle through all running jobs
@@ -105,34 +136,6 @@ loop do
         puts "INFO: Time passed: "+rs.time_passed.to_s+" sec. Overall time passed: "+"%02d"%otp_hours+":"+"%02d"%otp_minutes+":"+"%02d"%otp_seconds
       end
       rs.save!
-
-      # look if there is time left (in seconds)
-      if (time_left = rs.run_time * 3600 - (rs.overall_time_passed + rs.time_passed)) > 0
-        puts "INFO: There is time left in session "+rs.id.to_s+"."
-        # check if slaves are running
-        running_slaves = DQCCqueue.get_user_slaves(user_hash).length
-        diff = rs.num_slaves - running_slaves
-        max_diff = DQCCconfig.max_vms - $slave_vms.length
-        if diff > max_diff
-          puts "ERROR: Requested number of slaves exceeds maximum number of VMs. Will only add "+max_diff.to_s+" slaves."
-          DQCCqueue.add_slaves(user_hash, rs.vm_type, max_diff)
-        elsif diff > 0
-          puts "INFO: I have to add "+diff.to_s+" more slaves to session "+rs.id.to_s+"."
-          # add slaves
-          DQCCqueue.add_slaves(user_hash, rs.vm_type, diff)
-        elsif diff < 0
-          puts "INFO: I have to remove "+diff.abs.to_s+" slaves from session "+rs.id.to_s+"."
-          # remove slaves because there are more then defined
-          DQCCqueue.remove_slaves(user_hash, rs.vm_type, diff.abs)
-        else
-          puts "INFO: I don't have to do anything for this job."
-        end
-      # no time is left in the session
-      else
-        puts "INFO: I have to remove all slaves from session "+rs.id.to_s+"."
-        # remove all slaves
-        DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
-      end
     end
   end
 
