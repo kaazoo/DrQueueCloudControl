@@ -82,7 +82,7 @@ loop do
 
     # look if there is time left (in seconds)
     if (time_left = rs.run_time * 3600 - (rs.overall_time_passed + rs.time_passed)) > 0
-      puts "INFO: There is time left in session "+rs.id.to_s+"."
+      puts "INFO: There are "+time_left.to_s+" sec left in session "+rs.id.to_s+"."
       # check if slaves are running
       running_slaves = DQCCqueue.get_user_slaves(user_hash).length
       diff = rs.num_slaves - running_slaves
@@ -108,13 +108,15 @@ loop do
         puts "INFO: Session starts now."
         rs.start_timestamp = Time.now.to_i
         rs.time_passed = 1
-      elsif (rs.time_passed > 0) && (rs.stop_timestamp > 0)
+      elsif (rs.time_passed == 0) && (rs.stop_timestamp > 0)
         # continue counting when a job is active again
         puts "INFO: Session continues. "+rs.time_passed.to_s+" sec passed by so far."
         rs.start_timestamp = Time.now.to_i
         rs.stop_timestamp = 0
-        rs.overall_time_passed += rs.time_passed
-        rs.time_passed = 0
+        otp_hours = (rs.overall_time_passed/3600).to_i
+        otp_minutes = (rs.overall_time_passed/60 - otp_hours * 60).to_i
+        otp_seconds = (rs.overall_time_passed - (otp_minutes * 60 + otp_hours * 3600)).to_i
+        puts "INFO: Session continues. Overall time passed: "+"%02d"%otp_hours+":"+"%02d"%otp_minutes+":"+"%02d"%otp_seconds
       else
         # update time counter
         rs.time_passed = Time.now.to_i - rs.start_timestamp
