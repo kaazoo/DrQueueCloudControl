@@ -66,8 +66,10 @@ loop do
       puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". Removing all slaves if any."
       # remove all slaves
       DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
-      # update timestamps
+      # update time counter
       if rs.stop_timestamp == 0
+        rs.overall_time_passed += rs.time_passed
+        rs.time_passed = 0
         rs.stop_timestamp = Time.now.to_i
         puts "INFO: Setting stop timestamp to: "+rs.stop_timestamp.to_s+"."
         rs.save!
@@ -116,11 +118,6 @@ loop do
       else
         # update time counter
         rs.time_passed = Time.now.to_i - rs.start_timestamp
-        # add to overall time every 1800 seconds in case daemon dies
-        if rs.time_passed > 1800
-          rs.overall_time_passed += 1800
-          rs.time_passed -= 1800
-        end
         otp_hours = (rs.overall_time_passed/3600).to_i
         otp_minutes = (rs.overall_time_passed/60 - otp_hours * 60).to_i
         otp_seconds = (rs.overall_time_passed - (otp_minutes * 60 + otp_hours * 3600)).to_i
@@ -130,9 +127,15 @@ loop do
 
     # no time is left in the session
     else
-      puts "INFO: I have to remove all slaves from session "+rs.id.to_s+"."
+      puts "INFO: No time left. I have to remove all slaves from session "+rs.id.to_s+"."
       # remove all slaves
       DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
+      # update time counter
+      rs.overall_time_passed += rs.time_passed
+      rs.time_passed = 0
+      rs.stop_timestamp = Time.now.to_i
+      puts "INFO: Setting stop timestamp to: "+rs.stop_timestamp.to_s+"."
+      rs.save!
       # skip to next session
       next
     end
