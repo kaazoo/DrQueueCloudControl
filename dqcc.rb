@@ -110,7 +110,6 @@ loop do
         rs.time_passed = 1
       elsif (rs.time_passed == 0) && (rs.stop_timestamp > 0)
         # continue counting when a job is active again
-        puts "INFO: Session continues. "+rs.time_passed.to_s+" sec passed by so far."
         rs.start_timestamp = Time.now.to_i
         rs.stop_timestamp = 0
         otp_hours = (rs.overall_time_passed/3600).to_i
