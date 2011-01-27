@@ -40,6 +40,7 @@ module DQCCdb
       :host     => DQCCconfig.db_dqor_host)
   end
 
+
   # retrieve current database connection if available
   def db_connection
     if ActiveRecord::Base.connected? == false
@@ -49,12 +50,12 @@ module DQCCdb
     end
   end
 
+
   # return list of all jobs known to DQOR
   def fetch_job_list
     puts "DEBUG: fetch_job_list()"
 
     db_connection
-    #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     return Job.find(:all)
   end
@@ -65,7 +66,6 @@ module DQCCdb
     puts "DEBUG: fetch_rendersession_list()"
 
     db_connection
-    #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     # fetch all paid and owned rendersessions
     return Rendersession.find(:all, :conditions => "payment_id > 0 AND profile_id > 0")
@@ -77,7 +77,6 @@ module DQCCdb
     puts "DEBUG: fetch_user_data("+job_id.to_s+")"
 
     db_connection
-    #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     job = Job.find(job_id)
 
@@ -90,7 +89,6 @@ module DQCCdb
     puts "DEBUG: fetch_rendersession_job_list("+rendersession_id.to_s+")"
 
     db_connection
-    #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     rs = Rendersession.find(rendersession_id)
     pm = Payment.find(rs.payment_id)
@@ -105,7 +103,6 @@ module DQCCdb
     puts "DEBUG: find_rendersession("+user_hash+")"
 
     db_connection
-    #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     needed_pm = nil
     payments = Payment.find(:all)
