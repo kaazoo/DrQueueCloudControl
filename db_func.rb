@@ -40,12 +40,20 @@ module DQCCdb
       :host     => DQCCconfig.db_dqor_host)
   end
 
+  # retrieve current database connection if available
+  def db_connection
+    if ActiveRecord::Base.connected? == false
+      db_connect_dqor
+    else
+      ActiveRecord::Base.connection
+    end
+  end
 
   # return list of all jobs known to DQOR
   def fetch_job_list
     puts "DEBUG: fetch_job_list()"
 
-    db_connect_dqor
+    db_connection
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     return Job.find(:all)
@@ -56,7 +64,7 @@ module DQCCdb
   def fetch_rendersession_list
     puts "DEBUG: fetch_rendersession_list()"
 
-    db_connect_dqor
+    db_connection
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     # fetch all paid and owned rendersessions
@@ -68,7 +76,7 @@ module DQCCdb
   def fetch_user_data(job_id)
     puts "DEBUG: fetch_user_data("+job_id.to_s+")"
 
-    db_connect_dqor
+    db_connection
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     job = Job.find(job_id)
@@ -81,7 +89,7 @@ module DQCCdb
   def fetch_rendersession_job_list(rendersession_id)
     puts "DEBUG: fetch_rendersession_job_list("+rendersession_id.to_s+")"
 
-    db_connect_dqor
+    db_connection
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     rs = Rendersession.find(rendersession_id)
@@ -96,7 +104,7 @@ module DQCCdb
   def find_rendersession(user_hash)
     puts "DEBUG: find_rendersession("+user_hash+")"
 
-    db_connect_dqor
+    db_connection
     #ActiveRecord::Base.logger = Logger.new(STDERR)
 
     needed_pm = nil
