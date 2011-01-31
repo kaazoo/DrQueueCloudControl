@@ -33,8 +33,6 @@ loop do
   rs_list = DQCCdb.fetch_rendersession_list
   rs_list.each do |rs|
 
-    running_jobs = []
-
     # fetch list of all belonging jobs
     job_list = DQCCdb.fetch_rendersession_job_list(rs.id)
 
@@ -43,6 +41,8 @@ loop do
       puts "INFO: Rendersession "+rs.id.to_s+" isn't in use yet. Skipping this one."
       next
     end
+
+    running_jobs = []
 
     # fetch queue info for each job and check status
     job_list.each do |job|
@@ -132,10 +132,14 @@ loop do
       # remove all slaves
       DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
       # update time counter
-      rs.overall_time_passed += rs.time_passed
-      rs.time_passed = 0
-      rs.stop_timestamp = Time.now.to_i
-      puts "INFO: Setting stop timestamp to: "+rs.stop_timestamp.to_s+"."
+      if rs.stop_timestamp == 0
+        rs.overall_time_passed += rs.time_passed
+        rs.time_passed = 0
+        rs.stop_timestamp = Time.now.to_i
+        puts "INFO: Setting stop timestamp to: "+rs.stop_timestamp.to_s+"."
+      else
+        puts "INFO: Leaving stop timestamp at: "+rs.stop_timestamp.to_s+"."
+      end
       rs.save!
       # skip to next session
       next
