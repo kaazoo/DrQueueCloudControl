@@ -12,14 +12,21 @@ wget http://REPL_DL_SERVER:1194/REPL_HOSTNAME.tgz
 tar xzf REPL_HOSTNAME.tgz
 /etc/init.d/openvpn restart
 
-sleep 5
-
 # create user mountpoint
 mkdir /usr/local/drqueue/tmp/REPL_USERDIR
 
+# wait until server is reachable
+exval=1
+while [ "$exval" -eq "1" ]
+do
+  ping -c 1 REPL_MASTER 2>&1 >/dev/null
+  exval=$?
+  sleep 1
+done
+
 # mount shared storage
-mount.cifs //REPL_MASTER/tmp/REPL_USERDIR /usr/local/drqueue/tmp/REPL_USERDIR -o guest,rw,uid=drqueue
-mount.cifs //REPL_MASTER/logs /usr/local/drqueue/logs -o guest,rw,uid=drqueue
+mount -t cifs -o guest,rw,uid=drqueue //REPL_MASTER/tmp/REPL_USERDIR /usr/local/drqueue/tmp/REPL_USERDIR
+mount -t cifs -o guest,rw,uid=drqueue //REPL_MASTER/logs /usr/local/drqueue/logs
 
 sleep 5
 
