@@ -3,34 +3,6 @@ module DQCCconfig
   # for ip lookup
   require 'socket'
 
-  # for hash computation
-  require 'digest/md5'
-
-  # for Base64 encoding
-  require 'base64'
-
-  # for DrQueue control
-  require 'drqueue'
-
-  # for database connectivity
-  require 'active_record'
-
-  # for EC2 control
-  require 'AWS'
-
-
-  # database functionality
-  require 'db_func'
-  include DQCCdb
-
-  # DrQueue functionality
-  require 'queue_func'
-  include DQCCqueue
-
-  # cloud functionality
-  require 'cloud_func'
-  include DQCCcloud
-
 
   # find out local ip address
   def self.local_ip
@@ -65,30 +37,24 @@ module DQCCconfig
   attr :pool_types
   @pool_types = ['blender', 'maya', 'cinema4d']
 
+  # time range for caching slave data
+  attr :cache_time
+  @cache_time = 60
+
   # encryption salt for EBS volumes
   attr :ebs_encryption_salt
   @ebs_encryption_salt = "31c6772642cb2dce5a34f0a702f9470dd"
 
-  # DQOR database type
-  attr :db_dqor_adapter
-  @db_dqor_adapter = "mysql"
-  # DQOR database name
+  # DQOR database config
   attr :db_dqor_name
-  @db_dqor_name = "drqueueonrails"
-  # DQOR database username
-  attr :db_dqor_user
-  @db_dqor_user = "dqcc"
-  # DQOR database password
-  attr :db_dqor_pw
-  @db_dqor_pw = "foobar"
-  # DQOR database hostname
+  @db_dqor_name = "ipythondb"
   attr :db_dqor_host
   @db_dqor_host = "localhost"
 
   # DrQueue environment
   ENV['DRQUEUE_MASTER'] ||= '127.0.0.1'
   ENV['DRQUEUE_ROOT'] ||= '/usr/local/drqueue'
-  ENV['DRQUEUE_MASTER_FOR_VMS'] ||= '10.1.0.1'
+  ENV['DRQUEUE_MASTER_FOR_VMS'] ||= self.local_ip
 
   # EC2 environment
   ENV['AMAZON_ACCESS_KEY_ID'] ||= 'YOUR_ACCESS_KEY_ID'
