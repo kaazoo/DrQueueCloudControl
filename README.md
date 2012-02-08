@@ -3,13 +3,13 @@ DrQueueCloudControl
 
 This is a daemon which is used to supervise render sessions and control DrQueue slaves / EC2 cloud VMs. It needs connectivity to a DrQueueOnRails instance and to a DrQueue master daemon.
 
-DQCC uses the Rubygems 'DrQueueRubyBindings', 'activerecord', 'amazon-ec2' and 'daemons'.
+DQCC uses the Rubygems 'rubypython', 'mongoid', 'amazon-ec2' and 'daemons'.
 
 
 Installation
 ------------
 
-    $ gem install DrQueueRubyBindings activerecord amazon-ec2 daemons
+    $ gem install rubypython mongoid amazon-ec2 daemons
     $ useradd drqueuecloudcontrol
     $ su drqueuecloudcontrol -
     $ cd
@@ -22,7 +22,11 @@ Installation
 Usage
 -----
 
-Start daemon:
+Run daemon in foreground:
+
+    $ ruby dqcc_daemon.rb run
+
+Start daemon in background:
 
     $ ruby dqcc_daemon.rb start
 
@@ -48,6 +52,6 @@ Create documentation HTML files in directory 'doc':
 License
 -------
 
-Copyright (C) 2010 Andreas Schroeder
+Copyright (C) 2010-2012 Andreas Schroeder
 
 Licensed under GNU General Public License version 3. See LICENSE for details.
