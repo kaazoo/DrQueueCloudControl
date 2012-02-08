@@ -17,7 +17,7 @@ include DQCCqueue
 # sleep a while
 def tea_break
   puts "\n* waiting a while"
-  puts "DEBUG MEMORY: "+`pmap #{Process.pid} | tail -1`
+  #puts "DEBUG MEMORY: "+`pmap #{Process.pid} | tail -1`
   sleep DQCCconfig.sleep_interval
 end
 
@@ -46,20 +46,20 @@ loop do
 
     # fetch queue info for each job and check status
     job_list.each do |job|
-      queue_info = DQCCqueue.fetch_queue_info(job.queue_id)
+      queue_info = DQCCqueue.fetch_queue_info(job.id)
       if queue_info == nil
         puts "ERROR: Queue info for job "+job.id.to_s+" could not be fetched."
       else
         # see if there is any job active or waiting
-        if (queue_info.status == Drqueue::JOBSTATUS_ACTIVE) || (queue_info.status == Drqueue::JOBSTATUS_WAITING)
+        if DQCCqueue.job_status(job.id) == "pending"
           running_jobs << job
         end
       end
     end
 
-    # get needed info about job owner
-    user_data = DQCCdb.fetch_user_data(job_list[0].id)
-    user_hash = Digest::MD5.hexdigest(user_data.ldap_account)
+    # calculate MD5 hash of user id
+    user_hash = Digest::MD5.hexdigest(rs.user)
+    puts "DEBUG: User hash is "+user_hash
 
     # remove eventually running slaves of this session
     if running_jobs.length == 0
