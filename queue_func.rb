@@ -33,21 +33,18 @@ require 'drqueue'
 
 
   # return DrQueue job information of a job
-  def fetch_queue_info(queue_id)
-    puts "DEBUG: fetch_queue_info("+queue_id.to_s+")"
+  def fetch_queue_info(job_id)
+    puts "DEBUG: fetch_queue_info("+job_id.to_s+")"
 
-    found = 0
-    # new job object
-    ret_job = Drqueue::Job.new
-    # get job data
-    found = Drqueue::request_job_xfer(queue_id, ret_job, Drqueue::CLIENT)
+    return $pyDrQueueClient.query_job(job_id.to_s)
+  end
 
-    # job was not found
-    if found == 0
-      return nil
-    else
-      return ret_job
-    end
+
+  # return status of job
+  def job_status(job_id)
+    puts "DEBUG: job_status("+job_id.to_s+")"
+
+    return $pyDrQueueClient.job_status(job_id.to_s)
   end
 
 
@@ -55,12 +52,7 @@ require 'drqueue'
   def fetch_slave_list
     puts "DEBUG: fetch_slave_list()"
 
-    begin
-      return Drqueue::request_computer_list(Drqueue::CLIENT)
-    rescue IOError
-      puts "ERROR: Could not connect to DrQueue master daemon!"
-      exit 1
-    end
+    return $pyDrQueueClient.query_engine_list()
   end
 
 
@@ -139,8 +131,9 @@ require 'drqueue'
     slave_info = nil
 
     $slave_list.each do |computer|
-      if computer.hwinfo.address == address
-        slave_info = computer
+      comp = $pyDrQueueClient.identify_computer(computer, DQCCconfig.cache_time)
+      if comp.address == address
+        slave_info = comp
         break
       end
     end
@@ -164,35 +157,13 @@ require 'drqueue'
   end
 
 
-  # modify pool membership (requires direct communication to slave)
+  # modify pool membership
   def set_slave_pool(slave, pool)
     puts "DEBUG: set_slave_pool("+slave.to_s+", \""+pool.to_s+"\")"
 
-    if slave.hwinfo == nil
-      puts "ERROR: Slave "+slave.to_s+" has no hwinfo!"
-      return false
-    end
-
-    # save names of old pools
-    old_pools = []
-    np_max = slave.limits.npools - 1
-    (0..np_max).each do |np|
-      old_pools << slave.limits.get_pool(np).name
-    end
-
-    # add to specific new pool
-    puts "DEBUG: adding "+slave.hwinfo.address+" to pool "+pool
-    if Drqueue::request_slave_limits_pool_add(slave.hwinfo.address, pool, Drqueue::CLIENT) == 0
-      puts "ERROR: Could not add slave to pool!"
-    end
-
-    # remove from old pools
-    old_pools.each do |pool|
-      puts "DEBUG: removing "+slave.hwinfo.address+" from pool "+pool
-      if Drqueue::request_slave_limits_pool_remove(slave.hwinfo.address, pool, Drqueue::CLIENT) == 0
-        puts "ERROR: Could not remove slave from pool!"
-      end
-    end
+    comp = client.identify_computer(slave, cache_time)
+    puts "DEBUG: adding "+slave.to_s+" to pool "+pool.to_s
+    $pyDrQueueClient.computer_set_pools(comp, pool.split(","))
 
     return true
   end
@@ -225,7 +196,7 @@ require 'drqueue'
       # work on a number of parked slaves
       0.upto(usable - 1) do |i|
         # add to user pool(s)
-        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.hwinfo.name+"\" to pools \""+concat_pool_names_of_user(user_hash)+"\"."
+        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.name+"\" to pools \""+concat_pool_names_of_user(user_hash)+"\"."
         set_slave_pool(parked_slaves[i].queue_info, concat_pool_names_of_user(user_hash))
         # update queue info
         parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].vpn_ip)
@@ -312,15 +283,8 @@ require 'drqueue'
       return ''
     end
 
-    pools = ''
-    np_max = computer.limits.npools - 1
-    (0..np_max).each do |np|
-      pools += computer.limits.get_pool(np).name
-      if np < np_max 
-        pools += ' , '
-      end
-    end
-
+    comp = client.identify_computer(computer, DQCCconfig.cache_time)
+    pools = client.query_engine_pools(comp)
     return pools 
   end
 
@@ -335,7 +299,7 @@ require 'drqueue'
     DQCCconfig.pool_types.each do |type|
       pool_string += user_hash+"_"+type
       if i < count
-        pool_string += ", "
+        pool_string += ","
       end
       i += 1
     end
