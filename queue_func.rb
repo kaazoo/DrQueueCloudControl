@@ -108,14 +108,14 @@ require 'drqueue'
 
 
   # return list of all slave VMs belonging to a user
-  def get_user_slaves(user_hash)
-    puts "DEBUG: get_user_slaves("+user_hash.to_s+")"
+  def get_user_slaves(user_id)
+    puts "DEBUG: get_user_slaves(" + user_id.to_s + ")"
 
-    # walk through list and look for hash in pool names
+    # walk through list and look for user_id in pool names
     user_list = []
 
     $slave_vms.each do |vm|
-      if vm.pool_name_list.include? user_hash
+      if vm.pool_name_list.include? user_id
         user_list << vm
       end
     end
@@ -144,16 +144,16 @@ require 'drqueue'
 
   # return user of a slave by it's poolnames
   def get_owner_from_pools(slave)
-    puts "DEBUG: get_owner_from_pools("+slave.to_s+")"
+    puts "DEBUG: get_owner_from_pools(" + slave.to_s + ")"
 
     if slave == nil
       return nil
     end
 
     pool = slave.limits.get_pool(0).name
-    user_hash = pool.split("_")[0]
+    user_id = pool.split("_")[0]
 
-    return user_hash
+    return user_id
   end
 
 
@@ -170,13 +170,13 @@ require 'drqueue'
 
 
   # add a number of slaves which belong to a user and match a special type
-  def add_slaves(user_hash, vm_type, diff)
-    puts "DEBUG: add_slaves("+user_hash.to_s+", "+vm_type.to_s+", "+diff.to_s+")"
+  def add_slaves(user_id, vm_type, diff)
+    puts "DEBUG: add_slaves(" + user_id.to_s + ", " + vm_type.to_s + ", " + diff.to_s + ")"
 
     remaining = diff
 
     # look for slaves which have just been started
-    if (starting_slaves = get_starting_slaves(vm_type, user_hash)).length > 0
+    if (starting_slaves = get_starting_slaves(vm_type, user_id)).length > 0
       usable = [starting_slaves.length, remaining].min
       puts "DEBUG: Found "+usable.to_s+" starting slaves of type \""+vm_type+"\"."
       # work on a number of starting slaves
@@ -190,14 +190,14 @@ require 'drqueue'
     end
 
     # look for unused slaves and add them to user pool(s)
-    if (parked_slaves = get_parked_slaves(vm_type, user_hash)).length > 0
+    if (parked_slaves = get_parked_slaves(vm_type, user_id)).length > 0
       usable = [parked_slaves.length, remaining].min
       puts "DEBUG: Found "+usable.to_s+" parked slaves of type \""+vm_type+"\"."
       # work on a number of parked slaves
       0.upto(usable - 1) do |i|
         # add to user pool(s)
-        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.name+"\" to pools \""+concat_pool_names_of_user(user_hash)+"\"."
-        set_slave_pool(parked_slaves[i].queue_info, concat_pool_names_of_user(user_hash))
+        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.name+"\" to pools \""+concat_pool_names_of_user(user_id)+"\"."
+        set_slave_pool(parked_slaves[i].queue_info, concat_pool_names_of_user(user_id))
         # update queue info
         parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].vpn_ip)
       end
@@ -212,7 +212,7 @@ require 'drqueue'
     if remaining > 0
       0.upto(remaining - 1) do |i|
         # start up new slave VM
-        slave = DQCCcloud.start_vm(user_hash, vm_type, concat_pool_names_of_user(user_hash))
+        slave = DQCCcloud.start_vm(user_id, vm_type, concat_pool_names_of_user(user_id))
         if slave == nil
           puts "ERROR: Failed to start VM."
         end
@@ -223,11 +223,11 @@ require 'drqueue'
 
 
   # remove a number of slaves which belong to a user and match a special type
-  def remove_slaves(user_hash, vm_type, diff)
-    puts "DEBUG: remove_slaves("+user_hash.to_s+", "+vm_type.to_s+", "+diff.to_s+")"
+  def remove_slaves(user_id, vm_type, diff)
+    puts "DEBUG: remove_slaves(" + user_id.to_s + ", " + vm_type.to_s + ", " + diff.to_s + ")"
 
     # work on a number of parked slaves
-    if (user_slaves = get_user_slaves(user_hash)).length > 0
+    if (user_slaves = get_user_slaves(user_id)).length > 0
       0.upto(diff - 1) do |i|
         if(vm = search_registered_vm_by_address(user_slaves[i].vpn_ip)) == nil
           puts "DEBUG: search_registered_vm_by_address() failed. Skipping this one."
@@ -290,14 +290,14 @@ require 'drqueue'
 
 
   # concat all possible poolnames for a user
-  def concat_pool_names_of_user(user_hash)
-    puts "DEBUG: concat_pool_names_of_user("+user_hash.to_s+")"
+  def concat_pool_names_of_user(user_id)
+    puts "DEBUG: concat_pool_names_of_user(" + user_id.to_s + ")"
 
     pool_string = ""
     count = DQCCconfig.pool_types.length
     i = 1
     DQCCconfig.pool_types.each do |type|
-      pool_string += user_hash+"_"+type
+      pool_string += user_id + "_" + type
       if i < count
         pool_string += ","
       end

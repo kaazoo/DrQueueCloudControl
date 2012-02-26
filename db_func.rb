@@ -15,10 +15,6 @@ module DQCCdb
   end
 
 
-  # for hash computation
-  require 'digest/md5'
-
-
   class Job
     include Mongoid::Document
     store_in "drqueue_jobs"
@@ -107,25 +103,12 @@ module DQCCdb
 
 
   # return active rendersessions of user
-  def find_rendersession(user_hash)
-    puts "DEBUG: find_rendersession("+user_hash+")"
-
-    #db_connection
-
-    needed_pm = nil
-    payments = Payment.find(:all)
-    payments.each do |pm|
-      profile = Profile.find(pm.profile_id)
-      profile_hash = Digest::MD5.hexdigest(profile.ldap_account)
-      if profile_hash == user_hash
-        needed_pm = pm.id
-        break
-      end
-    end
+  def find_rendersession(user_id)
+    puts "DEBUG: find_rendersession(" + user_id + ")"
 
     active_rs = nil
-    Rendersession.find_all_by_payment_id(needed_pm).each do |rs|
-      # check if there is time left
+    Rendersession.all(:conditions => { :paid_at.ne => nil, :paypal_payer_id.ne => nil, :user => user_id }).each do |rs|
+    # check if there is time left
       if rs.time_passed < (rs.run_time * 3600 + rs.start_timestamp)
         # return only one session
         active_rs = rs

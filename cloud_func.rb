@@ -23,27 +23,29 @@ module DQCCcloud
 
 
   # create slave VM instance
-  def start_vm(user_hash, vm_type, pool_list)
-    puts "DEBUG: start_vm("+user_hash.to_s+", "+vm_type.to_s+", "+pool_list.to_s+")"
+  def start_vm(user_id, vm_type, pool_list)
+    puts "DEBUG: start_vm(" + user_id.to_s + ", " + vm_type.to_s + ", " + pool_list.to_s + ")"
 
     # connect to EC2
     ec2_connect
 
     # generate provisioning data
     hostname = 'slave-'+Digest::MD5.hexdigest(rand.to_s)
-    user_data = prepare_user_data(user_hash, hostname, pool_list)
+    user_data = prepare_user_data(user_id, hostname, pool_list)
     prepare_vpn_cert(hostname, DQCCconfig.local_ip)
 
     begin
       # start new instance
-      instance_data = @ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => vm_type, :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
+      if DQCCconfig.testmode != true
+        instance_data = @ec2.run_instances( {:image_id => ENV['EC2_SLAVE_AMI'], :min_count => 1, :max_count => 1, :key_name => ENV['EC2_KEY_NAME'], :user_data => user_data, :instance_type => vm_type, :kernel_id => nil, :availability_zone => ENV['EC2_AVAIL_ZONE'], :base64_encoded => true, :security_group => ENV['EC2_SEC_GROUP']} )
+      end
     rescue AWS::InstanceLimitExceeded
       puts "ERROR: Maximum number of VMs reached."
       return nil
     end
 
     # keep VM info
-    slave = SlaveVM.new(instance_data.instancesSet.item[0].instanceId, instance_data.instancesSet.item[0].instanceType, user_hash)
+    slave = SlaveVM.new(instance_data.instancesSet.item[0].instanceId, instance_data.instancesSet.item[0].instanceType, user_id)
     slave.hostname = hostname
     slave.pool_name_list = pool_list
 
@@ -62,21 +64,23 @@ module DQCCcloud
     ec2_connect
 
     # stop running instance
-    @ec2.terminate_instances( {:instance_id => slave.instance_id} )
+    if DQCCconfig.testmode != true
+      @ec2.terminate_instances( {:instance_id => slave.instance_id} )
+    end
 
     return true
   end
 
 
   # apply changes to startup script and convert to base64
-  def prepare_user_data(user_hash, hostname, pool_list)
+  def prepare_user_data(user_id, hostname, pool_list)
     puts "DEBUG: prepare_user_data("+hostname+", \""+pool_list+"\")"
 
     master = ENV['DRQUEUE_MASTER_FOR_VMS']
     dowonload_ip = DQCCconfig.local_ip
     tmpl_path = File.join(File.dirname(__FILE__), 'startup_script.template')
 
-    script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' #{tmpl_path} | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g' | sed 's/REPL_USERDIR/#{user_hash}/g'`
+    script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' #{tmpl_path} | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g' | sed 's/REPL_USERDIR/#{user_id}/g'`
 
     return Base64.b64encode(script_body)
   end
@@ -288,13 +292,13 @@ module DQCCcloud
 
     # encrypt attached volume for user
     script_path = File.join(File.dirname(__FILE__), 'encrypt_user_volume.sh')
-    `sudo #{script_path} #{device} #{user_hash} #{enc_input}`
+    `sudo #{script_path} #{device} #{user_id} #{enc_input}`
   end
 
 
   # create a encrypted storage volume for a user
-  def create_secure_storage(user_hash, size)
-    puts "DEBUG: create_secure_storage("+user_hash.to_s+", "+size.to_s+")"
+  def create_secure_storage(user_id, size)
+    puts "DEBUG: create_secure_storage("+user_id.to_s+", "+size.to_s+")"
 
     # create new volume
     vol = register_ebs_volume(size)

@@ -17,7 +17,8 @@ include DQCCqueue
 # sleep a while
 def tea_break
   puts "\n* waiting a while"
-  #puts "DEBUG MEMORY: "+`pmap #{Process.pid} | tail -1`
+  puts "DEBUG MEMORY Linux: run \"watch pmap #{Process.pid} | tail -n 1\" in another terminal."
+  puts "DEBUG MEMORY OSX: run \"watch vmmap #{Process.pid} | tail -n 12\" in another terminal."
   sleep DQCCconfig.sleep_interval
 end
 
@@ -57,15 +58,13 @@ loop do
       end
     end
 
-    # calculate MD5 hash of user id
-    user_hash = Digest::MD5.hexdigest(rs.user)
-    puts "DEBUG: User hash is "+user_hash
+    puts "DEBUG: User id is " + rs.user
 
     # remove eventually running slaves of this session
     if running_jobs.length == 0
       puts "INFO: There are no running jobs in rendersession "+rs.id.to_s+". Removing all slaves if any."
       # remove all slaves
-      DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
+      DQCCqueue.remove_slaves(rs.user, rs.vm_type, rs.num_slaves)
       # update time counter
       if rs.stop_timestamp == 0
         rs.overall_time_passed += rs.time_passed
@@ -84,20 +83,20 @@ loop do
     if (time_left = rs.run_time * 3600 - (rs.overall_time_passed + rs.time_passed)) > 0
       puts "INFO: There are "+time_left.to_s+" sec left in session "+rs.id.to_s+"."
       # check if slaves are running
-      running_slaves = DQCCqueue.get_user_slaves(user_hash).length
+      running_slaves = DQCCqueue.get_user_slaves(rs.user).length
       diff = rs.num_slaves - running_slaves
       max_diff = DQCCconfig.max_vms - $slave_vms.length
       if diff > max_diff
         puts "ERROR: Requested number of slaves exceeds maximum number of VMs. Will only add "+max_diff.to_s+" slaves."
-        DQCCqueue.add_slaves(user_hash, rs.vm_type, max_diff)
+        DQCCqueue.add_slaves(rs.user, rs.vm_type, max_diff)
       elsif diff > 0
         puts "INFO: I have to add "+diff.to_s+" more slaves to session "+rs.id.to_s+"."
         # add slaves
-        DQCCqueue.add_slaves(user_hash, rs.vm_type, diff)
+        DQCCqueue.add_slaves(rs.user, rs.vm_type, diff)
       elsif diff < 0
         puts "INFO: I have to remove "+diff.abs.to_s+" slaves from session "+rs.id.to_s+"."
         # remove slaves because there are more then defined
-        DQCCqueue.remove_slaves(user_hash, rs.vm_type, diff.abs)
+        DQCCqueue.remove_slaves(rs.user, rs.vm_type, diff.abs)
       else
         puts "INFO: I don't have to do anything for this job."
       end
@@ -130,7 +129,7 @@ loop do
     else
       puts "INFO: No time left. I have to remove all slaves from session "+rs.id.to_s+"."
       # remove all slaves
-      DQCCqueue.remove_slaves(user_hash, rs.vm_type, rs.num_slaves)
+      DQCCqueue.remove_slaves(rs.user, rs.vm_type, rs.num_slaves)
       # update time counter
       if rs.stop_timestamp == 0
         rs.overall_time_passed += rs.time_passed
