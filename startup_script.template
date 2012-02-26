@@ -25,17 +25,23 @@ do
 done
 
 # mount shared storage
-mount -t cifs -o guest,rw,uid=drqueue //REPL_MASTER/tmp/REPL_USERDIR /usr/local/drqueue/tmp/REPL_USERDIR
-mount -t cifs -o guest,rw,uid=drqueue //REPL_MASTER/logs /usr/local/drqueue/logs
+mount -t cifs -o rw,username=drqueue,password= //REPL_MASTER/tmp/REPL_USERDIR /usr/local/drqueue/tmp/REPL_USERDIR
+mount -t cifs -o rw,username=drqueue,password= //REPL_MASTER/logs /usr/local/drqueue/logs
+mount -t cifs -o rw,username=drqueue,password= //REPL_MASTER/security /usr/local/drqueue/ipython/profile_default/security
 
 sleep 5
 
-# startup DrQueue
+# startup DrQueueIPython
 export DRQUEUE_ROOT="/usr/local/drqueue"
+export IPYTHON_DIR="/usr/local/drqueue/ipython"
 export DRQUEUE_MASTER=REPL_MASTER
+export DRQUEUE_SLAVE=`ip addr sho tun0 | grep inet | awk '{print $2}'`
 export DRQUEUE_POOL=REPL_POOL
 echo "export DRQUEUE_ROOT=\"$DRQUEUE_ROOT\"" >/home/drqueue/env
+echo "export IPYTHON_DIR=\"$IPYTHON_DIR\"" >>/home/drqueue/env
 echo "export DRQUEUE_MASTER=\"$DRQUEUE_MASTER\"" >>/home/drqueue/env
+echo "export DRQUEUE_SLAVE=\"$DRQUEUE_SLAVE\"" >>/home/drqueue/env
 echo "export DRQUEUE_POOL=\"$DRQUEUE_POOL\"" >>/home/drqueue/env
 chmod +x /home/drqueue/env
-su -c "cd && ./env && $DRQUEUE_ROOT/bin/slave.Linux.x86_64 &" drqueue
+# su -c "cd && . ./env && $DRQUEUE_ROOT/bin/slave.Linux.x86_64 &" drqueue
+su -c "cd && . ./env && drqueue_slave.py &" drqueue
