@@ -46,11 +46,11 @@ module DQCCqueue
 
 
   # return list of slaves known to DrQueue master
-  #def fetch_slave_list
-  #  puts "DEBUG: fetch_slave_list()"
-  #
-  #  return $pyDrQueueClient.query_engine_list().rubify
-  #end
+  def fetch_slave_list
+    puts "DEBUG: fetch_slave_list()"
+
+    return $pyDrQueueClient.query_engine_list().rubify
+  end
 
 
   # return list of all currently parked slaves belonging to a user
@@ -284,14 +284,14 @@ module DQCCqueue
 
 
   # concat poolnames a computer is belonging to
-  def concat_pool_names_of_computer(computer)
-    puts "DEBUG: concat_pool_names_of_computer(" + computer.to_s + ")"
+  def concat_pool_names_of_computer(slave)
+    puts "DEBUG: concat_pool_names_of_computer(" + slave.hostname.to_s + ")"
 
-    if computer == nil
+    if slave == nil
       return ''
     end
 
-    pools_py = $pyDrQueueClient.computer_get_pools(computer)
+    pools_py = $pyDrQueueClient.computer_get_pools(slave.queue_info)
 
     # add each Python object to Ruby array
     pools = []

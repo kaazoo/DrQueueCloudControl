@@ -107,7 +107,7 @@ module DQCCcloud
         if (["running", "pending"].include?(instance.instanceState.name)) && (instance.imageId == ENV['EC2_SLAVE_AMI'])
           # update info about registered VMs if they are known
           reg_vm = search_registered_vm_by_instance_id(instance.instanceId)
-            if reg_vm != false
+            if reg_vm != nil
               # update existing entry
               puts "INFO: VM "+instance.instanceId+" is known. Updating entry."
               reg_vm.public_dns = instance.dnsName
@@ -124,7 +124,7 @@ module DQCCcloud
                 if reg_vm.queue_info == nil
                   puts "DEBUG (2/3): Could not get queue info of VM "+instance.instanceId+"."
                 else
-                  puts "DEBUG (2/3): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info + "."
+                  puts "DEBUG (2/3): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info.to_s + "."
                   # get list of pools from DrQueue computer info
                   reg_vm.pool_name_list = concat_pool_names_of_computer(reg_vm)
                 end
@@ -149,7 +149,7 @@ module DQCCcloud
                 if new_vm.queue_info == nil
                   puts "DEBUG (2/4): Could not get queue info of VM " + instance.instanceId + "."
                 else
-                  puts "DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info + "."
+                  puts "DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info.to_s + "."
                   # get list of pools from DrQueue computer info
                   new_vm.pool_name_list = concat_pool_names_of_computer(new_vm)
                   # get owner from pool membership
@@ -177,7 +177,11 @@ module DQCCcloud
 
   # look if an instance_id is already in the list
   def search_registered_vm_by_instance_id(instance_id)
-    puts "DEBUG: search_registered_vm_by_instance_id("+instance_id+")"
+    puts "DEBUG: search_registered_vm_by_instance_id(" + instance_id.to_s + ")"
+
+    if instance_id == nil
+      return nil
+    end
 
     if $slave_vms != nil
       $slave_vms.each do |reg_vm|
@@ -188,13 +192,17 @@ module DQCCcloud
       end
     end
     # not found
-    return false
+    return nil
   end
 
 
   # look if an address is already in the list
   def search_registered_vm_by_address(address)
-    puts "DEBUG: search_registered_vm_by_address("+address+")"
+    puts "DEBUG: search_registered_vm_by_address(" + address.to_s + ")"
+
+    if address == nil
+      return nil
+    end
 
     if $slave_vms != nil
       $slave_vms.each do |reg_vm|

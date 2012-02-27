@@ -27,7 +27,7 @@ loop do
   tea_break
 
   # fetch running slaves, registered in DrQueue and EC2
-  #$slave_list = DQCCqueue.fetch_slave_list
+  $slave_list = DQCCqueue.fetch_slave_list
   $slave_vms = DQCCcloud.get_slave_vms
 
   # cycle through all DQOR rendersessions
