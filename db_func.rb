@@ -63,14 +63,12 @@ module DQCCdb
 
 
 
-  # return list of all jobs known to DQOR
-  def fetch_job_list
-    puts "DEBUG: fetch_job_list()"
-
-    #db_connection
-
-    return Job.find(:all)
-  end
+#  # return list of all jobs known to DQOR
+#  def fetch_job_list
+#    puts "DEBUG: fetch_job_list()"
+#
+#    return Job.find(:all)
+#  end
 
 
   # return list of all rendersessions
@@ -84,13 +82,13 @@ module DQCCdb
   end
 
 
-  # return info about job owner
-  def fetch_user_data(job_id)
-    puts "DEBUG: fetch_user_data("+job_id.to_s+")"
-
-    job = Job.find(job_id)
-    return User.find(job.owner)
-  end
+#  # return info about job owner
+#  def fetch_user_data(job_id)
+#    puts "DEBUG: fetch_user_data("+job_id.to_s+")"
+#
+#    job = Job.find(job_id)
+#    return User.find(job.owner)
+#  end
 
 
   # return list of jobs belonging to a rendersession
@@ -102,22 +100,22 @@ module DQCCdb
   end
 
 
-  # return active rendersessions of user
-  def find_rendersession(user_id)
-    puts "DEBUG: find_rendersession(" + user_id + ")"
-
-    active_rs = nil
-    Rendersession.all(:conditions => { :paid_at.ne => nil, :paypal_payer_id.ne => nil, :user => user_id }).each do |rs|
-    # check if there is time left
-      if rs.time_passed < (rs.run_time * 3600 + rs.start_timestamp)
-        # return only one session
-        active_rs = rs
-        break
-      end
-    end
-
-    return active_rs
-  end
+#  # return active rendersessions of user
+#  def find_rendersession(user_id)
+#    puts "DEBUG: find_rendersession(" + user_id + ")"
+#
+#    active_rs = nil
+#    Rendersession.all(:conditions => { :paid_at.ne => nil, :paypal_payer_id.ne => nil, :user => user_id }).each do |rs|
+#    # check if there is time left
+#      if rs.time_passed < (rs.run_time * 3600 + rs.start_timestamp)
+#        # return only one session
+#        active_rs = rs
+#        break
+#      end
+#    end
+#
+#    return active_rs
+#  end
 
 
 end

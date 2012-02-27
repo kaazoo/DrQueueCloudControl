@@ -1,15 +1,12 @@
 module DQCCqueue
 
-# config
-require 'config'
-include DQCCconfig
+  # config
+  require 'config'
+  include DQCCconfig
 
-# cloud functionality
-require 'cloud_func'
-include DQCCcloud
-
-# for DrQueue control
-require 'drqueue'
+  # cloud functionality
+  require 'cloud_func'
+  include DQCCcloud
 
 
   class SlaveVM
@@ -49,11 +46,11 @@ require 'drqueue'
 
 
   # return list of slaves known to DrQueue master
-  def fetch_slave_list
-    puts "DEBUG: fetch_slave_list()"
-
-    return $pyDrQueueClient.query_engine_list()
-  end
+  #def fetch_slave_list
+  #  puts "DEBUG: fetch_slave_list()"
+  #
+  #  return $pyDrQueueClient.query_engine_list().rubify
+  #end
 
 
   # return list of all currently parked slaves belonging to a user
@@ -115,10 +112,14 @@ require 'drqueue'
     user_list = []
 
     $slave_vms.each do |vm|
-      if vm.pool_name_list.include? user_id
+      puts vm.pool_name_list
+      puts user_id
+      if vm.pool_name_list.to_s.include? user_id.to_s
         user_list << vm
       end
     end
+
+    puts user_list
 
     return user_list
   end
@@ -126,13 +127,17 @@ require 'drqueue'
 
   # return DrQueue info of computer by it's IP address
   def get_slave_info(address)
-    puts "DEBUG: get_slave_info("+address.to_s+")"
+    puts "DEBUG: get_slave_info(" + address.to_s + ")"
+
+    if address == nil
+      return nil
+    end
 
     slave_info = nil
 
     $slave_list.each do |computer|
       comp = $pyDrQueueClient.identify_computer(computer, DQCCconfig.cache_time)
-      if comp.address == address
+      if comp['address'].to_s == address
         slave_info = comp
         break
       end
@@ -144,13 +149,17 @@ require 'drqueue'
 
   # return user of a slave by it's poolnames
   def get_owner_from_pools(slave)
-    puts "DEBUG: get_owner_from_pools(" + slave.to_s + ")"
+    puts "DEBUG: get_owner_from_pools(" + slave.hostname.to_s + ")"
 
     if slave == nil
       return nil
     end
 
-    pool = slave.limits.get_pool(0).name
+    slave
+    puts slave.queue_info
+    #puts pools = $pyDrQueueClient.computer_get_pools(slave['engine_id']).rubify.to_s
+    puts pool = $pyDrQueueClient.computer_get_pools(slave.queue_info)[0].to_s
+    #user_id = pools[0].split("_")[0]
     user_id = pool.split("_")[0]
 
     return user_id
@@ -159,11 +168,10 @@ require 'drqueue'
 
   # modify pool membership
   def set_slave_pool(slave, pool)
-    puts "DEBUG: set_slave_pool("+slave.to_s+", \""+pool.to_s+"\")"
+    puts "DEBUG: set_slave_pool(" + slave.hostname.to_s + ", \"" + pool.to_s + "\")"
 
-    comp = client.identify_computer(slave, cache_time)
-    puts "DEBUG: adding "+slave.to_s+" to pool "+pool.to_s
-    $pyDrQueueClient.computer_set_pools(comp, pool.split(","))
+    puts "DEBUG: adding " + slave['hostname'].to_s + " to pool " + pool.to_s
+    $pyDrQueueClient.computer_set_pools(slave.queue_info, pool.split(","))
 
     return true
   end
@@ -196,8 +204,8 @@ require 'drqueue'
       # work on a number of parked slaves
       0.upto(usable - 1) do |i|
         # add to user pool(s)
-        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.name+"\" to pools \""+concat_pool_names_of_user(user_id)+"\"."
-        set_slave_pool(parked_slaves[i].queue_info, concat_pool_names_of_user(user_id))
+        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.hostname+"\" to pools \""+concat_pool_names_of_user(user_id)+"\"."
+        set_slave_pool(parked_slaves[i], concat_pool_names_of_user(user_id))
         # update queue info
         parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].vpn_ip)
       end
@@ -235,7 +243,7 @@ require 'drqueue'
         end
         if vm.instance_type == vm_type
           # add slaves to parking pool
-          set_slave_pool(user_slaves[i].queue_info, DQCCconfig.parking_pool)
+          set_slave_pool(user_slaves[i], DQCCconfig.parking_pool)
           # save parking time
           vm.parked_at = Time.now.to_i
         end
@@ -248,7 +256,7 @@ require 'drqueue'
 
 
   # shutdown slaves when their parking time is over
-  def shutdown_old_slaves
+  def shutdown_old_slaves()
     puts "DEBUG: shutdown_old_slaves()"
 
     parked_slaves = get_all_parked_slaves()
@@ -277,14 +285,20 @@ require 'drqueue'
 
   # concat poolnames a computer is belonging to
   def concat_pool_names_of_computer(computer)
-    puts "DEBUG: concat_pool_names_of_computer("+computer.to_s+")"
+    puts "DEBUG: concat_pool_names_of_computer(" + computer.to_s + ")"
 
     if computer == nil
       return ''
     end
 
-    comp = client.identify_computer(computer, DQCCconfig.cache_time)
-    pools = client.query_engine_pools(comp)
+    pools_py = $pyDrQueueClient.computer_get_pools(computer)
+
+    # add each Python object to Ruby array
+    pools = []
+    while pools_py.__len__ > 0
+      pools << pools_py.pop.to_s
+    end
+
     return pools 
   end
 

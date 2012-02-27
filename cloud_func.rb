@@ -77,10 +77,10 @@ module DQCCcloud
     puts "DEBUG: prepare_user_data("+hostname+", \""+pool_list+"\")"
 
     master = ENV['DRQUEUE_MASTER_FOR_VMS']
-    dowonload_ip = DQCCconfig.local_ip
+    download_ip = DQCCconfig.local_ip
     tmpl_path = File.join(File.dirname(__FILE__), 'startup_script.template')
 
-    script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' #{tmpl_path} | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{dowonload_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g' | sed 's/REPL_USERDIR/#{user_id}/g'`
+    script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' #{tmpl_path} | sed 's/REPL_MASTER/#{master}/g' | sed 's/REPL_DL_SERVER/#{download_ip}/g' | sed 's/REPL_POOL/#{pool_list}/g' | sed 's/REPL_USERDIR/#{user_id}/g'`
 
     return Base64.b64encode(script_body)
   end
@@ -113,16 +113,24 @@ module DQCCcloud
               reg_vm.public_dns = instance.dnsName
               reg_vm.private_dns = instance.privateDnsName
               reg_vm.private_ip = instance.privateIpAddress
+              # get VPN IP from private IP
               reg_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
               if reg_vm.vpn_ip == nil
-                puts "DEBUG: Could not look up VPN IP of VM "+instance.instanceId+"."
+                puts "DEBUG (1/3): Could not look up VPN IP of VM "+instance.instanceId+"."
+              else
+                puts "DEBUG (1/3): VPN IP of VM " + instance.instanceId + " is " + new_vm.vpn_ip + "."
+                # get DrQueue computer info from VPN IP
+                reg_vm.queue_info = DQCCqueue.get_slave_info(reg_vm.vpn_ip)
+                if reg_vm.queue_info == nil
+                  puts "DEBUG (2/3): Could not get queue info of VM "+instance.instanceId+"."
+                else
+                  puts "DEBUG (2/3): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info + "."
+                  # get list of pools from DrQueue computer info
+                  reg_vm.pool_name_list = concat_pool_names_of_computer(reg_vm)
+                end
               end
-              reg_vm.queue_info = DQCCqueue.get_slave_info(reg_vm.vpn_ip)
-              if reg_vm.queue_info == nil
-                puts "DEBUG: Could not get queue info of VM "+instance.instanceId+"."
-              end
-              reg_vm.pool_name_list = concat_pool_names_of_computer(reg_vm.queue_info)
               reg_vm.state = instance.instanceState.name
+              puts "DEBUG (3/3): Entry for VM " + instance.instanceId + " is updated."
             else
               # create new entry because VM was running before DQCC daemon (possibly crashed)
               puts "INFO: VM "+instance.instanceId+" is not known. Creating new entry."
@@ -130,21 +138,32 @@ module DQCCcloud
               new_vm.public_dns = instance.dnsName
               new_vm.private_dns = instance.privateDnsName
               new_vm.private_ip = instance.privateIpAddress
+              # get VPN IP from private IP
               new_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
               if new_vm.vpn_ip == nil
-                puts "DEBUG: Could not look up VPN IP of VM "+instance.instanceId+"."
-              end
-              new_vm.queue_info = DQCCqueue.get_slave_info(new_vm.vpn_ip)
-              if new_vm.queue_info == nil
-                puts "DEBUG: Could not get queue info of VM "+instance.instanceId+"."
-              end
-              new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm.queue_info)
-              if new_vm.owner == nil
-                puts "DEBUG: Could not look up owner of VM "+instance.instanceId+"."
+                puts "DEBUG (1/4): Could not look up VPN IP of VM " + instance.instanceId + "."
+              else
+                puts "DEBUG (1/4): VPN IP of VM " + instance.instanceId + " is " + new_vm.vpn_ip + "."
+                # get DrQueue computer info from VPN IP
+                new_vm.queue_info = DQCCqueue.get_slave_info(new_vm.vpn_ip)
+                if new_vm.queue_info == nil
+                  puts "DEBUG (2/4): Could not get queue info of VM " + instance.instanceId + "."
+                else
+                  puts "DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info + "."
+                  # get list of pools from DrQueue computer info
+                  new_vm.pool_name_list = concat_pool_names_of_computer(new_vm)
+                  # get owner from pool membership
+                  new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm)
+                  if new_vm.owner == nil
+                    puts "DEBUG (3/4): Could not look up owner of VM "+instance.instanceId+"."
+                  else
+                    puts "DEBUG (3/4): Owner of VM " + instance.instanceId + " is " + new_vm.owner + "."
+                  end
+                end
               end
               new_vm.state = instance.instanceState.name
-              new_vm.pool_name_list = concat_pool_names_of_computer(new_vm.queue_info)
               registered_vms << new_vm
+              puts "DEBUG (4/4): Entry for VM " + instance.instanceId + " is stored."
             end
         else
           puts "DEBUG: VM "+instance.instanceId+" is not usable."
@@ -200,17 +219,17 @@ module DQCCcloud
   end
 
 
-  # look up private VM IP address of VPN client
-  def lookup_private_ip(vpn_ip)
-    puts "DEBUG: lookup_private_ip("+vpn_ip.to_s+")"
-
-    if vpn_ip == nil
-      return nil
-    end
-
-    private_ip = `grep #{vpn_ip} /etc/openvpn/openvpn-status.log`.split(",")[2].split(":")[0]
-    return private_ip
-  end
+#  # look up private VM IP address of VPN client
+#  def lookup_private_ip(vpn_ip)
+#    puts "DEBUG: lookup_private_ip("+vpn_ip.to_s+")"
+#
+#    if vpn_ip == nil
+#      return nil
+#    end
+#
+#    private_ip = `grep #{vpn_ip} /etc/openvpn/openvpn-status.log`.split(",")[2].split(":")[0]
+#    return private_ip
+#  end
 
 
   # look up VPN IP address of VM
