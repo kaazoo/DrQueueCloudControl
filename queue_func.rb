@@ -170,7 +170,7 @@ module DQCCqueue
   def set_slave_pool(slave, pool)
     puts "DEBUG: set_slave_pool(" + slave.hostname.to_s + ", \"" + pool.to_s + "\")"
 
-    puts "DEBUG: adding " + slave['hostname'].to_s + " to pool " + pool.to_s
+    puts "DEBUG: adding " + slave.hostname.to_s + " to pool " + pool.to_s
     $pyDrQueueClient.computer_set_pools(slave.queue_info, pool.split(","))
 
     return true

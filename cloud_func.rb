@@ -118,13 +118,13 @@ module DQCCcloud
               if reg_vm.vpn_ip == nil
                 puts "DEBUG (1/3): Could not look up VPN IP of VM "+instance.instanceId+"."
               else
-                puts "DEBUG (1/3): VPN IP of VM " + instance.instanceId + " is " + new_vm.vpn_ip + "."
+                puts "DEBUG (1/3): VPN IP of VM " + instance.instanceId + " is " + reg_vm.vpn_ip + "."
                 # get DrQueue computer info from VPN IP
                 reg_vm.queue_info = DQCCqueue.get_slave_info(reg_vm.vpn_ip)
                 if reg_vm.queue_info == nil
                   puts "DEBUG (2/3): Could not get queue info of VM "+instance.instanceId+"."
                 else
-                  puts "DEBUG (2/3): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info.to_s + "."
+                  puts "DEBUG (2/3): Queue info of VM " + instance.instanceId + " is \n" + reg_vm.queue_info.to_s + "."
                   # get list of pools from DrQueue computer info
                   reg_vm.pool_name_list = concat_pool_names_of_computer(reg_vm)
                 end
