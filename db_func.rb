@@ -52,9 +52,12 @@ module DQCCdb
     field :run_time, :type => Integer
     field :vm_type, :type => String, :default => 't1.micro'
     field :costs, :type => Float
+    field :active, :type => Boolean
+
     field :paypal_token, :type => String
     field :paypal_payer_id, :type => String
     field :paid_at, :type => DateTime
+
     field :time_passed, :type => Integer, :default => 0
     field :start_timestamp, :type => Integer, :default => 0
     field :stop_timestamp, :type => Integer, :default => 0
@@ -75,8 +78,9 @@ module DQCCdb
   def fetch_rendersession_list
     puts "DEBUG: fetch_rendersession_list()"
 
-    # fetch all paid and owned rendersessions
-    sessions = Rendersession.all(:conditions => { :paid_at.ne => nil, :paypal_payer_id.ne => nil })
+    # fetch all paid, owned and active rendersessions
+    sessions = Rendersession.all(:conditions => { :paid_at.ne => nil, :paypal_payer_id.ne => nil, :active => true })
+
     puts "DEBUG: Rendersessions found: "+sessions.length.to_s
     return sessions
   end
