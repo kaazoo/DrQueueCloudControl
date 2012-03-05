@@ -155,12 +155,12 @@ module DQCCqueue
       return nil
     end
 
-    slave
-    puts slave.queue_info
-    #puts pools = $pyDrQueueClient.computer_get_pools(slave['engine_id']).rubify.to_s
-    puts pool = $pyDrQueueClient.computer_get_pools(slave.queue_info)[0].to_s
-    #user_id = pools[0].split("_")[0]
-    user_id = pool.split("_")[0]
+    if slave.pool_name_list.to_s.include? "_"
+      pool = slave.pool_name_list[0]
+      user_id = pool.split("_")[0]
+    else
+      user_id = nil
+    end
 
     return user_id
   end

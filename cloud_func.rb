@@ -150,6 +150,10 @@ module DQCCcloud
                   puts "DEBUG (2/4): Could not get queue info of VM " + instance.instanceId + "."
                 else
                   puts "DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info.to_s + "."
+                  # set hostname if possible
+                  if new_vm.queue_info != nil
+                    new_vm.hostname = new_vm.queue_info['hostname'].to_s
+                  end
                   # get list of pools from DrQueue computer info
                   new_vm.pool_name_list = concat_pool_names_of_computer(new_vm)
                   # get owner from pool membership
