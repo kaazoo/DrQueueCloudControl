@@ -1,7 +1,7 @@
 #
 # DrQueueCloudControl
 #
-# supervise render sesions and control slaves / cloud VMs
+# supervise rendersessions and control slaves / cloud VMs
 #
 # Copyright (C) 2010-2012 Andreas Schroeder
 #
