@@ -41,6 +41,14 @@ module DQCCconfig
   attr :cache_time
   @cache_time = 60
 
+  # do not perform any real actions on cloud
+  attr :testmode
+  @testmode = true
+
+  # maximum time to wait for unknown slave VMs
+  attr :max_wait
+  @max_wait = 600
+
   # encryption salt for EBS volumes
   attr :ebs_encryption_salt
   @ebs_encryption_salt = "31c6772642cb2dce5a34f0a702f9470dd"
@@ -54,7 +62,7 @@ module DQCCconfig
   # DrQueue environment
   ENV['DRQUEUE_MASTER'] ||= '127.0.0.1'
   ENV['DRQUEUE_ROOT'] ||= '/usr/local/drqueue'
-  ENV['DRQUEUE_MASTER_FOR_VMS'] ||= self.local_ip
+  ENV['DRQUEUE_MASTER_FOR_VMS'] ||= '10.11.12.1'
 
   # EC2 environment
   ENV['AMAZON_ACCESS_KEY_ID'] ||= 'YOUR_ACCESS_KEY_ID'
