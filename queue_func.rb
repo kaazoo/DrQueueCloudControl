@@ -242,7 +242,8 @@ module DQCCqueue
           puts "DEBUG: search_registered_vm_by_address() failed. Skipping this one."
           next
         end
-        if vm.instance_type == vm_type
+        # only park slave if not parked yet
+        if (vm.instance_type == vm_type) && !(vm.pool_name_list.include? DQCCconfig.parking_pool)
           # add slaves to parking pool
           set_slave_pool(user_slaves[i], user_id + "_" + DQCCconfig.parking_pool)
           # save parking time
