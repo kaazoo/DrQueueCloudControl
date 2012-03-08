@@ -76,7 +76,7 @@ module DQCCcloud
   def check_max_wait(slave)
     puts "DEBUG: check_max_wait(" + slave.instance_id + ")"
 
-    instance_launch_time = DateTime.parse(slave.launchTime)
+    instance_launch_time = DateTime.parse(slave.launch_time)
     if (Time.now.to_i - instance_launch_time.to_i) > DQCCconfig.max_wait
       puts "DEBUG: slave instance " + slave.instance_id.to_s + " seems to be stuck for more than " + DQCCconfig.max_wait.to_s + " seconds. Stopping VM."
       stop_vm(slave)
@@ -120,7 +120,7 @@ module DQCCcloud
         # we are not interested in terminated/stopping and non-slave VMs
         if (["running", "pending"].include?(instance.instanceState.name)) && (instance.imageId == ENV['EC2_SLAVE_AMI'])
           # check age of VMs
-          puts "DEBUG: Instance " + instance.instanceId + " was started " + (Time.now.to_i - DateTime.parse(instance.launchTime).to_i) + " seconds ago."
+          puts "DEBUG: Instance " + instance.instanceId + " was started " + (Time.now.to_i - DateTime.parse(instance.launchTime).to_i).to_s + " seconds ago."
           # update info about registered VMs if they are known
           reg_vm = search_registered_vm_by_instance_id(instance.instanceId)
             if reg_vm != nil
@@ -130,6 +130,7 @@ module DQCCcloud
               reg_vm.private_dns = instance.privateDnsName
               reg_vm.private_ip = instance.privateIpAddress
               reg_vm.state = instance.instanceState.name
+              reg_vm.launch_time = instance.launchTime
               # get VPN IP from private IP
               reg_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
               if reg_vm.vpn_ip == nil
@@ -159,6 +160,7 @@ module DQCCcloud
               new_vm.private_dns = instance.privateDnsName
               new_vm.private_ip = instance.privateIpAddress
               new_vm.state = instance.instanceState.name
+              new_vm.launch_time = instance.launchTime
               # get VPN IP from private IP
               new_vm.vpn_ip = lookup_vpn_ip(instance.privateIpAddress)
               if new_vm.vpn_ip == nil
