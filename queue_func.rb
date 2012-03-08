@@ -244,7 +244,7 @@ module DQCCqueue
         end
         if vm.instance_type == vm_type
           # add slaves to parking pool
-          set_slave_pool(user_slaves[i], DQCCconfig.parking_pool)
+          set_slave_pool(user_slaves[i], user_id + "_" + DQCCconfig.parking_pool)
           # save parking time
           vm.parked_at = Time.now.to_i
         end
