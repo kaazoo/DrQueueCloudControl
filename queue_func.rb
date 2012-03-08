@@ -105,9 +105,9 @@ module DQCCqueue
   end
 
 
-  # return list of all slave VMs belonging to a user
-  def get_user_slaves(user_id)
-    puts "DEBUG: get_user_slaves(" + user_id.to_s + ")"
+  # return list of running slave VMs belonging to a user
+  def get_running_user_slaves(user_id)
+    puts "DEBUG: get_running_user_slaves(" + user_id.to_s + ")"
 
     # walk through list and look for user_id in pool names
     user_list = []
@@ -115,7 +115,30 @@ module DQCCqueue
     $slave_vms.each do |vm|
       puts vm.pool_name_list
       puts user_id
-      if vm.pool_name_list.to_s.include? user_id.to_s
+      # slave has to be in any pool which contains user_id, but not parking pool name
+      if (vm.pool_name_list.to_s.include? user_id.to_s) && (vm.pool_name_list.to_s.include? DQCCconfig.parking_pool == false)
+        user_list << vm
+      end
+    end
+
+    puts user_list
+
+    return user_list
+  end
+
+
+  # return list of parked slave VMs belonging to a user
+  def get_parked_user_slaves(user_id)
+    puts "DEBUG: get_parked_user_slaves(" + user_id.to_s + ")"
+
+    # walk through list and look for user_id in pool names
+    user_list = []
+
+    $slave_vms.each do |vm|
+      puts vm.pool_name_list
+      puts user_id
+      # slave has to be in pseudo pool which contains user_id and parking pool name
+      if (vm.pool_name_list.to_s.include? user_id.to_s) && (vm.pool_name_list.to_s.include? DQCCconfig.parking_pool)
         user_list << vm
       end
     end
@@ -236,14 +259,14 @@ module DQCCqueue
     puts "DEBUG: remove_slaves(" + user_id.to_s + ", " + vm_type.to_s + ", " + diff.to_s + ")"
 
     # work on a number of parked slaves
-    if (user_slaves = get_user_slaves(user_id)).length > 0
+    if (user_slaves = get_parked_user_slaves(user_id)).length > 0
       0.upto(diff - 1) do |i|
         if(vm = search_registered_vm_by_address(user_slaves[i].vpn_ip)) == nil
           puts "DEBUG: search_registered_vm_by_address() failed. Skipping this one."
           next
         end
         # only park slave if not parked yet
-        if (vm.instance_type == vm_type) && !(vm.pool_name_list.include? DQCCconfig.parking_pool)
+        if vm.instance_type == vm_type
           # add slaves to parking pool
           set_slave_pool(user_slaves[i], user_id + "_" + DQCCconfig.parking_pool)
           # save parking time

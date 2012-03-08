@@ -93,7 +93,7 @@ loop do
     if (time_left = rs.run_time * 3600 - (rs.overall_time_passed + rs.time_passed)) > 0
       puts "INFO: There are "+time_left.to_s+" sec left in session "+rs.id.to_s+"."
       # check if slaves are running
-      running_slaves = DQCCqueue.get_user_slaves(rs.user).length
+      running_slaves = DQCCqueue.get_running_user_slaves(rs.user).length
       puts "DEBUG: There are " + running_slaves.to_s + " slaves already running."
       diff = rs.num_slaves - running_slaves
       max_diff = DQCCconfig.max_vms - $slave_vms.length
