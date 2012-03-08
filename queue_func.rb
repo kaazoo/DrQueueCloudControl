@@ -205,7 +205,7 @@ module DQCCqueue
       # work on a number of parked slaves
       0.upto(usable - 1) do |i|
         # add to user pool(s)
-        puts "INFO: I will add slave \""+parked_slaves[i].queue_info.hostname+"\" to pools \""+concat_pool_names_of_user(user_id)+"\"."
+        puts "INFO: I will add slave \""+parked_slaves[i].hostname+"\" to pools \""+concat_pool_names_of_user(user_id)+"\"."
         set_slave_pool(parked_slaves[i], concat_pool_names_of_user(user_id))
         # update queue info
         parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].vpn_ip)
