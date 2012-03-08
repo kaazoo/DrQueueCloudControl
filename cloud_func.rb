@@ -76,13 +76,15 @@ module DQCCcloud
   def check_max_wait(slave)
     puts "DEBUG: check_max_wait(" + slave.instance_id + ")"
 
+    # check how long this VM is running
     instance_launch_time = DateTime.parse(slave.launch_time)
     if (Time.now.to_i - instance_launch_time.to_i) > DQCCconfig.max_wait
       puts "DEBUG: slave instance " + slave.instance_id.to_s + " seems to be stuck for more than " + DQCCconfig.max_wait.to_s + " seconds. Stopping VM."
       stop_vm(slave)
+      return true
+    else
+      return false
     end
-
-    return true
   end
 
 
@@ -136,7 +138,9 @@ module DQCCcloud
               if reg_vm.vpn_ip == nil
                 puts "DEBUG (1/3): Could not look up VPN IP of VM "+instance.instanceId+"."
                 # stop VM if stuck
-                check_max_wait(reg_vm)
+                if check_max_wait(reg_vm)
+                  next
+                end
               else
                 puts "DEBUG (1/3): VPN IP of VM " + instance.instanceId + " is " + reg_vm.vpn_ip + "."
                 # get DrQueue computer info from VPN IP
@@ -144,7 +148,9 @@ module DQCCcloud
                 if reg_vm.queue_info == nil
                   puts "DEBUG (2/3): Could not get queue info of VM "+instance.instanceId+"."
                   # stop VM if stuck
-                  check_max_wait(reg_vm)
+                  if check_max_wait(reg_vm)
+                    next
+                  end
                 else
                   puts "DEBUG (2/3): Queue info of VM " + instance.instanceId + " is \n" + reg_vm.queue_info.to_s + "."
                   # get list of pools from DrQueue computer info
@@ -166,7 +172,9 @@ module DQCCcloud
               if new_vm.vpn_ip == nil
                 puts "DEBUG (1/4): Could not look up VPN IP of VM " + instance.instanceId + "."
                 # stop VM if stuck
-                check_max_wait(new_vm)
+                if check_max_wait(new_vm)
+                  next
+                end
               else
                 puts "DEBUG (1/4): VPN IP of VM " + instance.instanceId + " is " + new_vm.vpn_ip + "."
                 # get DrQueue computer info from VPN IP
@@ -174,7 +182,9 @@ module DQCCcloud
                 if new_vm.queue_info == nil
                   puts "DEBUG (2/4): Could not get queue info of VM " + instance.instanceId + "."
                   # stop VM if stuck
-                  check_max_wait(new_vm)
+                  if check_max_wait(new_vm)
+                    next
+                  end
                 else
                   puts "DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info.to_s + "."
                   # set hostname if possible
