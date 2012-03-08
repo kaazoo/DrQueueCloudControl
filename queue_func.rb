@@ -10,7 +10,7 @@ module DQCCqueue
 
 
   class SlaveVM
-    attr_accessor :instance_id, :instance_type, :owner, :hostname, :public_dns, :private_dns, :private_ip, :vpn_ip, :queue_info, :state, :parked_at, :pool_name_list, :known_since
+    attr_accessor :instance_id, :instance_type, :owner, :hostname, :public_dns, :private_dns, :private_ip, :vpn_ip, :queue_info, :state, :parked_at, :pool_name_list
 
     def initialize(instance_id, instance_type, owner)
       @instance_id = instance_id
@@ -25,7 +25,6 @@ module DQCCqueue
       @state = "pending"
       @parked_at = nil
       @pool_name_list = nil
-      @known_since = Time.now
     end
   end
 

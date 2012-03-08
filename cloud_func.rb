@@ -76,7 +76,8 @@ module DQCCcloud
   def check_max_wait(slave)
     puts "DEBUG: check_max_wait(" + slave.instance_id + ")"
 
-    if (Time.now.to_i - known_since.to_i) > DQCCconfig.max_wait
+    instance_launch_time = DateTime.parse(slave.launchTime)
+    if (Time.now.to_i - instance_launch_time.to_i) > DQCCconfig.max_wait
       puts "DEBUG: slave instance " + slave.instance_id.to_s + " seems to be stuck for more than " + DQCCconfig.max_wait.to_s + " seconds. Stopping VM."
       stop_vm(slave)
     end
@@ -118,6 +119,8 @@ module DQCCcloud
       res.instancesSet.item.each do |instance|
         # we are not interested in terminated/stopping and non-slave VMs
         if (["running", "pending"].include?(instance.instanceState.name)) && (instance.imageId == ENV['EC2_SLAVE_AMI'])
+          # check age of VMs
+          puts "DEBUG: Instance " + instance.instanceId + " was started " + (Time.now.to_i - DateTime.parse(instance.launchTime).to_i) + " seconds ago."
           # update info about registered VMs if they are known
           reg_vm = search_registered_vm_by_instance_id(instance.instanceId)
             if reg_vm != nil
