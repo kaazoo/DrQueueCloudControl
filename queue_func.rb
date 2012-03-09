@@ -258,17 +258,14 @@ module DQCCqueue
   def remove_slaves(user_id, vm_type, diff)
     puts "DEBUG: remove_slaves(" + user_id.to_s + ", " + vm_type.to_s + ", " + diff.to_s + ")"
 
-    # work on a number of parked slaves
-    if (user_slaves = get_parked_user_slaves(vm_type, user_id)).length > 0
+    # work on a number of running slaves
+    if (user_slaves = get_running_user_slaves(vm_type, user_id)).length > 0
       0.upto(diff - 1) do |i|
-        if(vm = search_registered_vm_by_address(user_slaves[i].vpn_ip)) == nil
-          puts "DEBUG: search_registered_vm_by_address() failed. Skipping this one."
-          next
-        end
+        vm = user_slaves[i]
         # only park slave if not parked yet
         if vm.instance_type == vm_type
           # add slaves to parking pool
-          set_slave_pool(user_slaves[i], user_id + "_" + DQCCconfig.parking_pool)
+          set_slave_pool(vm, user_id + "_" + DQCCconfig.parking_pool)
           # save parking time
           vm.parked_at = Time.now.to_i
         end
