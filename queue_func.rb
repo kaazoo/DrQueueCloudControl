@@ -106,8 +106,8 @@ module DQCCqueue
 
 
   # return list of running slave VMs belonging to a user
-  def get_running_user_slaves(user_id)
-    puts "DEBUG: get_running_user_slaves(" + user_id.to_s + ")"
+  def get_running_user_slaves(vm_type, user_id)
+    puts "DEBUG: get_running_user_slaves(" + vm_type.to_s + ", " + user_id.to_s + ")"
 
     # walk through list and look for user_id in pool names
     user_list = []
@@ -116,7 +116,7 @@ module DQCCqueue
       puts vm.pool_name_list
       puts user_id
       # slave has to be in any pool which contains user_id, but not parking pool name
-      if (vm.pool_name_list.to_s.include? user_id.to_s) && (vm.pool_name_list.to_s.include? DQCCconfig.parking_pool == false)
+      if (vm.pool_name_list.include? user_id) && (vm.pool_name_list.include? DQCCconfig.parking_pool == false) && (vm.instance_type == vm_type)
         user_list << vm
       end
     end
@@ -128,8 +128,8 @@ module DQCCqueue
 
 
   # return list of parked slave VMs belonging to a user
-  def get_parked_user_slaves(user_id)
-    puts "DEBUG: get_parked_user_slaves(" + user_id.to_s + ")"
+  def get_parked_user_slaves(vm_type, user_id)
+    puts "DEBUG: get_parked_user_slaves(" + vm_type.to_s + ", " + user_id.to_s + ")"
 
     # walk through list and look for user_id in pool names
     user_list = []
@@ -138,7 +138,7 @@ module DQCCqueue
       puts vm.pool_name_list
       puts user_id
       # slave has to be in pseudo pool which contains user_id and parking pool name
-      if (vm.pool_name_list.to_s.include? user_id.to_s) && (vm.pool_name_list.to_s.include? DQCCconfig.parking_pool)
+      if (vm.pool_name_list.to_s.include? user_id.to_s) && (vm.pool_name_list.to_s.include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type)
         user_list << vm
       end
     end
@@ -222,7 +222,7 @@ module DQCCqueue
     end
 
     # look for unused slaves and add them to user pool(s)
-    if (parked_slaves = get_parked_slaves(vm_type, user_id)).length > 0
+    if (parked_slaves = get_parked_user_slaves(vm_type, user_id)).length > 0
       usable = [parked_slaves.length, remaining].min
       puts "DEBUG: Found "+usable.to_s+" parked slaves of type \""+vm_type+"\"."
       # work on a number of parked slaves
@@ -259,7 +259,7 @@ module DQCCqueue
     puts "DEBUG: remove_slaves(" + user_id.to_s + ", " + vm_type.to_s + ", " + diff.to_s + ")"
 
     # work on a number of parked slaves
-    if (user_slaves = get_parked_user_slaves(user_id)).length > 0
+    if (user_slaves = get_parked_user_slaves(vm_type, user_id)).length > 0
       0.upto(diff - 1) do |i|
         if(vm = search_registered_vm_by_address(user_slaves[i].vpn_ip)) == nil
           puts "DEBUG: search_registered_vm_by_address() failed. Skipping this one."
