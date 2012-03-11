@@ -57,8 +57,8 @@ loop do
 
     # fetch queue info for each job and check status
     job_list.each do |job|
-      queue_info = DQCCqueue.fetch_queue_info(job.id)
-      if queue_info == nil
+      job_info = DQCCqueue.fetch_job_info(job.id)
+      if job_info == nil
         puts "ERROR: Queue info for job "+job.id.to_s+" could not be fetched."
       else
         # see if there is any job active or waiting

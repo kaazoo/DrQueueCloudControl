@@ -31,8 +31,8 @@ module DQCCqueue
 
 
   # return DrQueue job information of a job
-  def fetch_queue_info(job_id)
-    puts "DEBUG: fetch_queue_info("+job_id.to_s+")"
+  def fetch_job_info(job_id)
+    puts "DEBUG: fetch_job_info("+job_id.to_s+")"
 
     return $pyDrQueueClient.query_job(job_id.to_s)
   end
