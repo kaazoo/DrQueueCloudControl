@@ -76,15 +76,17 @@ module DQCCqueue
     puts "DEBUG: get_all_parked_slaves()"
 
     # walk through list and look for parking pool
-    park_list = []
+    parked_list = []
 
     $slave_vms.each do |vm|
       if (vm.queue_info != nil) && (vm.pool_name_list.include? DQCCconfig.parking_pool)
-        park_list << vm
+        parked_list << vm
       end
     end
 
-    return park_list
+    puts "DEBUG: Found " + parked_list.length.to_s + " parked slaves."
+
+    return parked_list
   end
 
 
@@ -100,6 +102,8 @@ module DQCCqueue
         starting_list << vm
       end
     end
+
+    puts "DEBUG: Found " + starting_list.length.to_s + " starting slaves."
 
     return starting_list
   end
@@ -119,6 +123,8 @@ module DQCCqueue
       end
     end
 
+    puts "DEBUG: Found " + running_list.length.to_s + " running slaves."
+
     return running_list
   end
 
@@ -136,6 +142,8 @@ module DQCCqueue
         parked_list << vm
       end
     end
+
+    puts "DEBUG: Found " + parked_list.length.to_s + " parked slaves."
 
     return parked_list
   end
@@ -305,7 +313,7 @@ module DQCCqueue
     puts "DEBUG: concat_pool_names_of_computer(" + slave.hostname.to_s + ")"
 
     if slave == nil
-      return ''
+      return []
     end
 
     pools_py = $pyDrQueueClient.computer_get_pools(slave.queue_info)
