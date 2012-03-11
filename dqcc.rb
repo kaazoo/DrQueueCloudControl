@@ -161,7 +161,9 @@ loop do
   end
 
   # save resources
-  DQCCqueue.shutdown_old_slaves
+  if DQCCconfig.stop_behaviour == "park"
+    DQCCqueue.shutdown_old_slaves
+  end
 
 
 end

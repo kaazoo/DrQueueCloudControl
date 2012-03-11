@@ -211,22 +211,25 @@ module DQCCqueue
       puts "DEBUG: Remaining slaves that need to be started: "+remaining.to_s
     end
 
-    # look for unused slaves and add them to user pool(s)
-    if (parked_slaves = get_parked_user_slaves(vm_type, user_id)).length > 0
-      usable = [parked_slaves.length, remaining].min
-      puts "DEBUG: Found "+usable.to_s+" parked slaves of type \""+vm_type+"\"."
-      # work on a number of parked slaves
-      0.upto(usable - 1) do |i|
-        # add to user pool(s)
-        puts "INFO: I will add slave \""+parked_slaves[i].hostname+"\" to pools \""+concat_pool_names_of_user(user_id)+"\"."
-        set_slave_pool(parked_slaves[i], concat_pool_names_of_user(user_id))
-        # update queue info
-        parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].vpn_ip)
+    # reuse park slaves if configured
+    if DQCCconfig.stop_behaviour == "park"
+      # look for unused slaves and add them to user pool(s)
+      if (parked_slaves = get_parked_user_slaves(vm_type, user_id)).length > 0
+        usable = [parked_slaves.length, remaining].min
+        puts "DEBUG: Found "+usable.to_s+" parked slaves of type \""+vm_type+"\"."
+        # work on a number of parked slaves
+        0.upto(usable - 1) do |i|
+          # add to user pool(s)
+          puts "INFO: I will add slave \""+parked_slaves[i].hostname+"\" to pools \""+concat_pool_names_of_user(user_id)+"\"."
+          set_slave_pool(parked_slaves[i], concat_pool_names_of_user(user_id))
+          # update queue info
+          parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].vpn_ip)
+        end
+        if remaining >= usable
+          remaining -= usable
+        end
+        puts "DEBUG: Remaining slaves that need to be started: "+remaining.to_s
       end
-      if remaining >= usable
-        remaining -= usable
-      end
-      puts "DEBUG: Remaining slaves that need to be started: "+remaining.to_s
     end
 
     # we still need to start more
@@ -252,13 +255,25 @@ module DQCCqueue
     if (user_slaves = get_running_user_slaves(vm_type, user_id)).length > 0
       0.upto(diff - 1) do |i|
         vm = user_slaves[i]
-        # only park slave if not parked yet
-        if vm.instance_type == vm_type
-          # add slaves to parking pool
-          set_slave_pool(vm, user_id + "_" + DQCCconfig.parking_pool)
-          # save parking time
-          vm.parked_at = Time.now.to_i
+
+        # park slaves for later reuse if configured
+        if DQCCconfig.stop_behaviour == "park"
+          # only park slave if not parked yet
+          if vm.instance_type == vm_type
+            # add slaves to parking pool
+            set_slave_pool(vm, user_id + "_" + DQCCconfig.parking_pool)
+            # save parking time
+            vm.parked_at = Time.now.to_i
+          end
+        # shutdown slaves immediately
+        elsif DQCCconfig.stop_behaviour == "shutdown"
+          #### TODO: shutdown 5 minutes before next hour
+          ####       check vm.launch_time for this
+          DQCCcloud.stop_vm(vm)
+        else
+          puts "ERROR: Your configuration is not valid. stop_behaviour has be either \"park\" or \"shutdown\"."
         end
+
       end
     # no user slaves found
     else
