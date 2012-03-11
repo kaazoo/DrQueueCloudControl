@@ -154,7 +154,7 @@ module DQCCcloud
                 else
                   puts "DEBUG (2/3): Queue info of VM " + instance.instanceId + " is \n" + reg_vm.queue_info.to_s + "."
                   # get list of pools from DrQueue computer info
-                  reg_vm.pool_name_list = concat_pool_names_of_computer(reg_vm)
+                  reg_vm.pool_name_list = DQCCqueue.concat_pool_names_of_computer(reg_vm)
                 end
               end
               puts "DEBUG (3/3): Entry for VM " + instance.instanceId + " is updated."
@@ -192,7 +192,7 @@ module DQCCcloud
                     new_vm.hostname = new_vm.queue_info['hostname'].to_s
                   end
                   # get list of pools from DrQueue computer info
-                  new_vm.pool_name_list = concat_pool_names_of_computer(new_vm)
+                  new_vm.pool_name_list = DQCCqueue.concat_pool_names_of_computer(new_vm)
                   # get owner from pool membership
                   new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm)
                   if new_vm.owner == nil
