@@ -54,23 +54,6 @@ module DQCCqueue
   end
 
 
-#  # return list of all currently parked slaves belonging to a user
-#  def get_parked_slaves(vm_type, owner)
-#    puts "DEBUG: get_parked_slaves("+vm_type.to_s+", "+owner.to_s+")"
-#
-#    # walk through list and look for parking pool
-#    park_list = []
-#
-#    $slave_vms.each do |vm|
-#      if (vm.queue_info != nil) && (vm.pool_name_list.include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type) && (vm.owner == owner)
-#        park_list << vm
-#      end
-#    end
-#
-#    return park_list
-#  end
-
-
   # return list of all currently parked slaves
   def get_all_parked_slaves()
     puts "DEBUG: get_all_parked_slaves()"
@@ -79,8 +62,12 @@ module DQCCqueue
     parked_list = []
 
     $slave_vms.each do |vm|
-      if (vm.queue_info != nil) && (vm.pool_name_list.include? DQCCconfig.parking_pool)
-        parked_list << vm
+      if (vm.queue_info != nil)
+        vm.pool_name_list.each do |pool|
+          if pool.include? DQCCconfig.parking_pool
+            parked_list << vm
+          end
+        end
       end
     end
 
@@ -118,7 +105,7 @@ module DQCCqueue
 
     $slave_vms.each do |vm|
       # slave has to be in any pool which doesn't contain parking pool name and but belongs to user
-      if (vm.pool_name_list.include? DQCCconfig.parking_pool == false) && (vm.instance_type == vm_type) && (vm.owner == owner)
+      if (vm.pool_name_list.include?(owner + "_" + DQCCconfig.parking_pool) == false) && (vm.instance_type == vm_type) && (vm.owner == owner)
         running_list << vm
       end
     end
@@ -138,7 +125,7 @@ module DQCCqueue
 
     $slave_vms.each do |vm|
       # slave has to be in pseudo pool which contains user_id and parking pool name
-      if (vm.pool_name_list.to_s.include? DQCCconfig.parking_pool) && (vm.instance_type == vm_type) && (vm.owner == owner)
+      if (vm.pool_name_list.to_s.include?(owner + "_" + DQCCconfig.parking_pool)) && (vm.instance_type == vm_type) && (vm.owner == owner)
         parked_list << vm
       end
     end
