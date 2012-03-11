@@ -21,8 +21,8 @@ module DQCCconfig
   attr :sleep_interval
   @sleep_interval = 10
 
-  # park engines for a given time or shut them down immediately
-  # values: "shutdown", "park"
+  # park engines for a given time or shut them down (immediately or with delay)
+  # values: "shutdown", "shutdown_with_delay", "park"
   attr :stop_behaviour
   @stop_behaviour = "shutdown"
 

@@ -267,14 +267,27 @@ module DQCCqueue
           end
         # shutdown slaves immediately
         elsif DQCCconfig.stop_behaviour == "shutdown"
-          #### TODO: shutdown 5 minutes before next hour
-          ####       check vm.launch_time for this
           # stop slave VM
           DQCCcloud.stop_vm(vm)
           # remove from global list
           $slave_vms.delete(vm)
+        # shutdown slaves only 5 minutes before next full hour
+        elsif DQCCconfig.stop_behaviour == "shutdown_with_delay"
+          # check age of VM
+          age_in_seconds = Time.now.to_i - DateTime.parse(vm.launch_time).to_i
+          puts "DEBUG: Instance " + vm.instance_id + " was started " + age_in_seconds.to_s + " seconds ago."
+          seconds_to_next_hour = 3600 - age_in_seconds.remainder(3600)
+          if seconds_to_next_hour <= 300
+            puts "DEBUG: There are " + seconds_to_next_hour.to_s + " seconds until the next full hour. Will stop instance " + vm.instance_id + " now."
+            # stop slave VM
+            DQCCcloud.stop_vm(vm)
+            # remove from global list
+            $slave_vms.delete(vm)
+          else
+            puts "DEBUG: There are " + seconds_to_next_hour.to_s + " seconds until the next full hour. Will stop instance " + vm.instance_id + " later."
+          end
         else
-          puts "ERROR: Your configuration is not valid. stop_behaviour has be either \"park\" or \"shutdown\"."
+          puts "ERROR: Your configuration is not valid. stop_behaviour has be either \"park\", \"shutdown\" or \"shutdown_with_delay\"."
         end
 
       end
