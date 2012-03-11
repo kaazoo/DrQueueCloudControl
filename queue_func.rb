@@ -269,7 +269,10 @@ module DQCCqueue
         elsif DQCCconfig.stop_behaviour == "shutdown"
           #### TODO: shutdown 5 minutes before next hour
           ####       check vm.launch_time for this
+          # stop slave VM
           DQCCcloud.stop_vm(vm)
+          # remove from global list
+          $slave_vms.delete(vm)
         else
           puts "ERROR: Your configuration is not valid. stop_behaviour has be either \"park\" or \"shutdown\"."
         end
