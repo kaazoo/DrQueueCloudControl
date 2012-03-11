@@ -105,7 +105,7 @@ module DQCCqueue
 
     $slave_vms.each do |vm|
       # slave has to be in any pool which doesn't contain parking pool name and but belongs to user
-      if (vm.pool_name_list.include?(owner + "_" + DQCCconfig.parking_pool) == false) && (vm.instance_type == vm_type) && (vm.owner == owner)
+      if (vm.pool_name_list != nil) && (vm.pool_name_list.include?(owner + "_" + DQCCconfig.parking_pool) == false) && (vm.instance_type == vm_type) && (vm.owner == owner)
         running_list << vm
       end
     end
@@ -125,7 +125,7 @@ module DQCCqueue
 
     $slave_vms.each do |vm|
       # slave has to be in pseudo pool which contains user_id and parking pool name
-      if (vm.pool_name_list.to_s.include?(owner + "_" + DQCCconfig.parking_pool)) && (vm.instance_type == vm_type) && (vm.owner == owner)
+      if (vm.pool_name_list != nil) && (vm.pool_name_list.to_s.include?(owner + "_" + DQCCconfig.parking_pool)) && (vm.instance_type == vm_type) && (vm.owner == owner)
         parked_list << vm
       end
     end
