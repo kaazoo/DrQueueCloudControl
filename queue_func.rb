@@ -148,7 +148,7 @@ module DQCCqueue
 
     $slave_list.each do |computer|
       comp = $pyDrQueueClient.identify_computer(computer, DQCCconfig.cache_time)
-      if comp['address'].to_s == address
+      if (comp != nil) && (comp['address'].to_s == address)
         slave_info = comp
         break
       end
