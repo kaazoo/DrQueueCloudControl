@@ -85,7 +85,10 @@ module DQCCqueue
     starting_list = []
 
     $slave_vms.each do |vm|
-      if ((vm.state == "pending") || (vm.queue_info == nil)) && (vm.instance_type == vm_type) && (vm.owner == owner)
+      # newly created VMs can be pending (booting VM)
+      # OR
+      # running but without queue_info (rendering job right after start OR not having DrQueue slave process started yet)
+      if ( (vm.state == "pending") && (vm.instance_type == vm_type) ) || ( (vm.state == "running") && (vm.instance_type == vm_type) && (vm.queue_info == nil) )
         starting_list << vm
       end
     end
@@ -253,7 +256,8 @@ module DQCCqueue
 
     # work on a number of running slaves
     if (user_slaves = get_running_user_slaves(vm_type, user_id)).length > 0
-      0.upto(diff - 1) do |i|
+      usable = [user_slaves.length, diff].min
+      0.upto(usable - 1) do |i|
         vm = user_slaves[i]
 
         # park slaves for later reuse if configured
@@ -287,7 +291,7 @@ module DQCCqueue
             puts "DEBUG: There are " + seconds_to_next_hour.to_s + " seconds until the next full hour. Will stop instance " + vm.instance_id + " later."
           end
         else
-          puts "ERROR: Your configuration is not valid. stop_behaviour has be either \"park\", \"shutdown\" or \"shutdown_with_delay\"."
+          puts "ERROR: Your configuration is invalid. stop_behaviour has be either \"park\", \"shutdown\" or \"shutdown_with_delay\"."
         end
 
       end
