@@ -88,7 +88,7 @@ module DQCCqueue
       # newly created VMs can be pending (booting VM)
       # OR
       # running but without queue_info (rendering job right after start OR not having DrQueue slave process started yet)
-      if ( (vm.state == "pending") && (vm.instance_type == vm_type) ) || ( (vm.state == "running") && (vm.instance_type == vm_type) && (vm.queue_info == nil) )
+      if ( (vm.state == "pending") && (vm.instance_type == vm_type) ) || ( (vm.state == "running") && (vm.instance_type == vm_type) && (vm.queue_info == nil) )
         starting_list << vm
       end
     end
