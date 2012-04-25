@@ -34,7 +34,7 @@ module DQCCqueue
   def fetch_job_info(job_id)
     puts "DEBUG: fetch_job_info("+job_id.to_s+")"
 
-    return $pyDrQueueClient.query_job(job_id.to_s)
+    return $pyDrQueueClient.query_job_by_id(job_id.to_s)
   end
 
 
@@ -50,7 +50,7 @@ module DQCCqueue
   def fetch_slave_list
     puts "DEBUG: fetch_slave_list()"
 
-    return $pyDrQueueClient.query_engine_list().rubify
+    return $pyDrQueueClient.query_computer_list().rubify
   end
 
 
