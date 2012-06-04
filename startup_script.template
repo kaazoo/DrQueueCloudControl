@@ -33,12 +33,12 @@ sleep 5
 
 # startup DrQueueIPython
 export DRQUEUE_ROOT="/usr/local/drqueue"
-export IPYTHON_DIR="/usr/local/drqueue/ipython"
+export IPYTHONDIR="/usr/local/drqueue/ipython"
 export DRQUEUE_MASTER=REPL_MASTER
 export DRQUEUE_SLAVE=`ip addr sho tun0 | grep inet | awk '{print $2}'`
 export DRQUEUE_POOL=REPL_POOL
 echo "export DRQUEUE_ROOT=\"$DRQUEUE_ROOT\"" >/home/drqueue/env
-echo "export IPYTHON_DIR=\"$IPYTHON_DIR\"" >>/home/drqueue/env
+echo "export IPYTHONDIR=\"$IPYTHONDIR\"" >>/home/drqueue/env
 echo "export DRQUEUE_MASTER=\"$DRQUEUE_MASTER\"" >>/home/drqueue/env
 echo "export DRQUEUE_SLAVE=\"$DRQUEUE_SLAVE\"" >>/home/drqueue/env
 echo "export DRQUEUE_POOL=\"$DRQUEUE_POOL\"" >>/home/drqueue/env
