@@ -4,4 +4,5 @@ dqcc.output
 dqcc.pid
 dqcc_monitor.pid
 doc
+*.pyc
 
