@@ -169,8 +169,8 @@ class DQCCqueue():
             usable = [starting_slaves.length, remaining].min
             print("DEBUG: Found "+usable.to_s+" starting slaves of type \""+vm_type+"\".")
             # work on a number of starting slaves
-            0.upto(usable - 1) do |i|
-            print("INFO: Waiting for "+starting_slaves[i].instance_id+" to finish startup.")
+            for i in range(0, (usable - 1)):
+                print("INFO: Waiting for "+starting_slaves[i].instance_id+" to finish startup.")
         if remaining >= usable:
             remaining -= usable
             print("DEBUG: Remaining slaves that need to be started: " + str(remaining))
@@ -182,143 +182,116 @@ class DQCCqueue():
                 usable = [parked_slaves.length, remaining].min
                 print("DEBUG: Found "+usable.to_s+" parked slaves of type \""+vm_type+"\".")
                 # work on a number of parked slaves
-                0.upto(usable - 1) do |i|
+                for i in range(0, (usable - 1)):
                     # add to user pool(s)
-                    puts "INFO: I will add slave \""+parked_slaves[i].hostname+"\" to pools \""+concat_pool_names_of_user(user_id)+"\"."
+                    print("INFO: I will add slave \""+parked_slaves[i].hostname+"\" to pools \""+concat_pool_names_of_user(user_id)+"\".")
                     set_slave_pool(parked_slaves[i], concat_pool_names_of_user(user_id))
                     # update queue info
                     parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].vpn_ip)
-                if remaining >= usable
+                if remaining >= usable:
                     remaining -= usable
-            puts "DEBUG: Remaining slaves that need to be started: "+remaining.to_s
+            print("DEBUG: Remaining slaves that need to be started: " + str(remaining))
 
         # we still need to start more
-        puts "DEBUG: Remaining slaves that need to be started: "+remaining.to_s
+        print("DEBUG: Remaining slaves that need to be started: " + str(remaining))
         if remaining > 0:
-            0.upto(remaining - 1) do |i|
+            for i in range(0, (remaining - 1)):
                 # start up new slave VM
                 slave = DQCCcloud.start_vm(user_id, vm_type, concat_pool_names_of_user(user_id))
-                if slave == nil
-                    puts "ERROR: Failed to start VM."
+                if slave == None:
+                    print("ERROR: Failed to start VM.")
 
 
-  # remove a number of slaves which belong to a user and match a special type
-  def remove_slaves(user_id, vm_type, diff)
-    puts "DEBUG: remove_slaves(" + user_id.to_s + ", " + vm_type.to_s + ", " + diff.to_s + ")"
+    # remove a number of slaves which belong to a user and match a special type
+    def remove_slaves(user_id, vm_type, diff):
+        print("DEBUG: remove_slaves(" + user_id.to_s + ", " + vm_type.to_s + ", " + diff.to_s + ")")
 
-    # work on a number of running slaves
-    if (user_slaves = get_running_user_slaves(vm_type, user_id)).length > 0
-      usable = [user_slaves.length, diff].min
-      0.upto(usable - 1) do |i|
-        vm = user_slaves[i]
+        # work on a number of running slaves
+        if len(user_slaves = get_running_user_slaves(vm_type, user_id)) > 0:
+            usable = [user_slaves.length, diff].min
+            for i in range(0, (usable - 1)):
+                vm = user_slaves[i]
 
-        # park slaves for later reuse if configured
-        if DQCCconfig.stop_behaviour == "park"
-          # only park slave if not parked yet
-          if vm.instance_type == vm_type
-            # add slaves to parking pool
-            set_slave_pool(vm, user_id + "_" + DQCCconfig.parking_pool)
-            # save parking time
-            vm.parked_at = Time.now.to_i
-          end
-        # shutdown slaves immediately
-        elsif DQCCconfig.stop_behaviour == "shutdown"
-          # stop slave VM
-          DQCCcloud.stop_vm(vm)
-          # remove from global list
-          $slave_vms.delete(vm)
-        # shutdown slaves only 5 minutes before next full hour
-        elsif DQCCconfig.stop_behaviour == "shutdown_with_delay"
-          # check age of VM
-          age_in_seconds = Time.now.to_i - DateTime.parse(vm.launch_time).to_i
-          puts "DEBUG: Instance " + vm.instance_id + " was started " + age_in_seconds.to_s + " seconds ago."
-          seconds_to_next_hour = 3600 - age_in_seconds.remainder(3600)
-          if seconds_to_next_hour <= 300
-            puts "DEBUG: There are " + seconds_to_next_hour.to_s + " seconds until the next full hour. Will stop instance " + vm.instance_id + " now."
-            # stop slave VM
-            DQCCcloud.stop_vm(vm)
-            # remove from global list
-            $slave_vms.delete(vm)
-          else
-            puts "DEBUG: There are " + seconds_to_next_hour.to_s + " seconds until the next full hour. Will stop instance " + vm.instance_id + " later."
-          end
-        else
-          puts "ERROR: Your configuration is invalid. stop_behaviour has be either \"park\", \"shutdown\" or \"shutdown_with_delay\"."
-        end
-
-      end
-    # no user slaves found
-    else
-      puts "INFO: No slave had to be removed."
-    end
-  end    
+                # park slaves for later reuse if configured
+                if DQCCconfig.stop_behaviour == "park":
+                    # only park slave if not parked yet
+                    if vm.instance_type == vm_type:
+                        # add slaves to parking pool
+                        set_slave_pool(vm, user_id + "_" + DQCCconfig.parking_pool)
+                        # save parking time
+                        vm.parked_at = Time.now.to_i
+                # shutdown slaves immediately
+                elif DQCCconfig.stop_behaviour == "shutdown":
+                    # stop slave VM
+                    DQCCcloud.stop_vm(vm)
+                    # remove from global list
+                    slave_vms.delete(vm)
+                # shutdown slaves only 5 minutes before next full hour
+                elif DQCCconfig.stop_behaviour == "shutdown_with_delay":
+                    # check age of VM
+                    age_in_seconds = Time.now.to_i - DateTime.parse(vm.launch_time).to_i
+                    print("DEBUG: Instance " + vm.instance_id + " was started " + age_in_seconds.to_s + " seconds ago.")
+                    seconds_to_next_hour = 3600 - age_in_seconds.remainder(3600)
+                    if seconds_to_next_hour <= 300:
+                        print("DEBUG: There are " + seconds_to_next_hour.to_s + " seconds until the next full hour. Will stop instance " + vm.instance_id + " now.")
+                        # stop slave VM
+                        DQCCcloud.stop_vm(vm)
+                        # remove from global list
+                        slave_vms.delete(vm)
+                    else:
+                        print("DEBUG: There are " + seconds_to_next_hour.to_s + " seconds until the next full hour. Will stop instance " + vm.instance_id + " later.")
+                else:
+                  print("ERROR: Your configuration is invalid. stop_behaviour has be either \"park\", \"shutdown\" or \"shutdown_with_delay\".")
+        # no user slaves found
+        else:
+          print("INFO: No slave had to be removed.")
 
 
-  # shutdown slaves when their parking time is over
-  def shutdown_old_slaves()
-    puts "DEBUG: shutdown_old_slaves()"
+    # shutdown slaves when their parking time is over
+    def shutdown_old_slaves():
+        print("DEBUG: shutdown_old_slaves()")
 
-    parked_slaves = get_all_parked_slaves()
-    parked_slaves.each do |slave|
-      if slave.parked_at == nil
-        puts "ERROR: Slave "+slave.instance_id+" has been parked but when isn't known. Shutting down now."
-        # stop slave VM
-        DQCCcloud.stop_vm(slave)
-        # remove from global list
-        $slave_vms.delete(slave)
-      else
-        # search for old entries
-        if (Time.now.to_i - DQCCconfig.park_time) > slave.parked_at
-           puts "INFO: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+" and will be shut down now."
-          # stop slave VM
-          DQCCcloud.stop_vm(slave)
-          # remove from global list
-          $slave_vms.delete(slave)
-        else
-          puts "DEBUG: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+"."
-        end
-      end
-    end
-  end
+        parked_slaves = get_all_parked_slaves()
+        for slave in parked_slaves:
+            if slave.parked_at == None:
+                print("ERROR: Slave "+slave.instance_id+" has been parked but when isn't known. Shutting down now.")
+                # stop slave VM
+                DQCCcloud.stop_vm(slave)
+                # remove from global list
+                slave_vms.delete(slave)
+            else:
+                # search for old entries
+                if (int(Time.now) - DQCCconfig.park_time) > slave.parked_at:
+                    print("INFO: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+" and will be shut down now.")
+                    # stop slave VM
+                    DQCCcloud.stop_vm(slave)
+                    # remove from global list
+                    slave_vms.delete(slave)
+                else:
+                    print("DEBUG: Slave "+slave.instance_id+" has been parked at "+Time.at(slave.parked_at).to_s+".")
 
 
-  # concat poolnames a computer is belonging to
-  def concat_pool_names_of_computer(slave)
-    puts "DEBUG: concat_pool_names_of_computer(" + slave.hostname.to_s + ")"
+    # concat poolnames a computer is belonging to
+    def concat_pool_names_of_computer(slave):
+        print("DEBUG: concat_pool_names_of_computer(" + slave.hostname.to_s + ")")
 
-    if slave == nil
-      return []
-    end
+        if slave == None:
+          return []
 
-    pools_py = $pyDrQueueClient.computer_get_pools(slave.queue_info)
-
-    # add each Python object to Ruby array
-    pools = []
-    while pools_py.__len__ > 0
-      pools << pools_py.pop.to_s
-    end
-
-    return pools 
-  end
+        return client.computer_get_pools(slave.queue_info)
 
 
-  # concat all possible poolnames for a user
-  def concat_pool_names_of_user(user_id)
-    puts "DEBUG: concat_pool_names_of_user(" + user_id.to_s + ")"
+    # concat all possible poolnames for a user
+    def concat_pool_names_of_user(user_id):
+        print("DEBUG: concat_pool_names_of_user(" + user_id.to_s + ")")
 
-    pool_string = ""
-    count = DQCCconfig.pool_types.length
-    i = 1
-    DQCCconfig.pool_types.each do |type|
-      pool_string += user_id + "_" + type
-      if i < count
-        pool_string += ","
-      end
-      i += 1
-    end
+        pool_string = ""
+        count = len(DQCCconfig.pool_types)
+        i = 1
+        for type in DQCCconfig.pool_types:
+          pool_string += user_id + "_" + type
+          if i < count:
+            pool_string += ","
+          i += 1
+        return pool_string
 
-    return pool_string
-  end
-
-
-end
