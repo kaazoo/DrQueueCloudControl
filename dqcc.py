@@ -29,6 +29,34 @@ from db_func import DQCCdb
 # DrQueue functionality
 from queue_func import DQCCqueue
 
+# cloud functionality
+from cloud_func import DQCCcloud
+
+# read config from config file
+import ConfigParser
+config = ConfigParser.RawConfigParser()
+config.read("dqcc.cfg")
+
+# debug config file
+print(config.getint("DQCCconfig", "sleep_interval"))
+print(config.get("DQCCconfig", "stop_behaviour"))
+print(config.get("DQCCconfig", "parking_pool"))
+print(config.getint("DQCCconfig", "park_time"))
+print(config.getint("DQCCconfig", "max_vms"))
+print(config.get("DQCCconfig", "pool_types"))
+print(config.getint("DQCCconfig", "cache_time"))
+print(config.getboolean("DQCCconfig", "testmode"))
+print(config.getint("DQCCconfig", "max_wait"))
+print(config.get("DQCCconfig", "ebs_encryption_salt"))
+print(config.get("DQCCconfig", "db_dqor_name"))
+print(config.get("DQCCconfig", "db_dqor_host"))
+print(config.get("DQCCconfig", "ec2_slave_ami"))
+print(config.get("DQCCconfig", "ec2_key_name"))
+print(config.get("DQCCconfig", "ec2_instance_type"))
+print(config.get("DQCCconfig", "ec2_avail_zone"))
+print(config.get("DQCCconfig", "ec2_sec_group"))
+
+
 # initialize global variables
 global slave_list
 global slave_vms
@@ -44,10 +72,10 @@ def tea_break():
 
 # main daemon loop
 while(True):
-    tea_break()
+    # tea_break()
 
     # fetch running slaves, registered in DrQueue and EC2
-    slave_list = DQCCqueue.fetch_slave_list()
+    DQCCqueue.slave_list = client.query_computer_list()
     slave_vms = DQCCcloud.get_slave_vms()
 
     # cycle through all DQOR rendersessions
