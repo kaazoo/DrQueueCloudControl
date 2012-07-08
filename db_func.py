@@ -1,21 +1,41 @@
 class DQCCdb():
 
-    # config
-    from config import DQCCconfig
-
     # for database connectivity
-    #require 'mongoid'
+    import minimongo
+
+    # read config from config file
+    import ConfigParser
+    config = ConfigParser.RawConfigParser()
+    config.read("dqcc.cfg")
+
+    # store config
+    global db_config
+    db_config = {}
+    db_config["db_dqor_host"] = config.get("DQCCconfig", "db_dqor_host")
+    db_config["db_dqor_name"] = config.get("DQCCconfig", "db_dqor_name")
+
+    # debug config
+    print("\nDB configuration:")
+    print(db_config["db_dqor_host"])
+    print(db_config["db_dqor_name"])
 
 
-#    Mongoid.configure do |config|
-#        name = DQCCconfig.db_dqor_name
-#        host = DQCCconfig.db_dqor_host
-#        config.master = Mongo::Connection.new.db(name)
-#    end
+    class Job(minimongo.Model):
+        class Meta:
+            # Here, we specify the database and collection names.
+            # A connection to your DB is automatically created.
+            global db_config
+            hostname = db_config["db_dqor_host"]
+            database = db_config["db_dqor_name"]
+            collection = "drqueue_jobs"
 
+            # Now, we programatically declare what indices we want.
+            # The arguments to the Index constructor are identical to
+            # the args to pymongo"s ensure_index function.
+            #indices = (
+            #    minimongo.Index("name"),
+            #)
 
-    class Job():
-        pass
         #include Mongoid::Document
         #store_in "drqueue_jobs"
 
@@ -34,20 +54,44 @@ class DQCCdb():
 #    field :file_provider, :type => String
 
 
-    class User():
-        pass
-        #include Mongoid::Document
-        #store_in "drqueue_users"
+    class User(minimongo.Model):
+        class Meta:
+            # Here, we specify the database and collection names.
+            # A connection to your DB is automatically created.
+            global db_config
+            hostname = db_config["db_dqor_host"]
+            database = db_config["db_dqor_name"]
+            collection = "drqueue_users"
+
+            # Now, we programatically declare what indices we want.
+            # The arguments to the Index constructor are identical to
+            # the args to pymongo"s ensure_index function.
+            #indices = (
+            #    minimongo.Index("name"),
+            #)
+
 
 #    field :name, :type => String
 #    field :admin, :type => Boolean, :default => false
 #    field :beta_user, :type => Boolean, :default => true
 
 
-    class Rendersession():
-        pass
-        #include Mongoid::Document
-        #store_in "cloudcontrol_rendersessions"
+    class Rendersession(minimongo.Model):
+        class Meta:
+            # Here, we specify the database and collection names.
+            # A connection to your DB is automatically created.
+            global db_config
+            hostname = db_config["db_dqor_host"]
+            database = db_config["db_dqor_name"]
+            collection = "cloudcontrol_rendersessions"
+
+            # Now, we programatically declare what indices we want.
+            # The arguments to the Index constructor are identical to
+            # the args to pymongo"s ensure_index function.
+            #indices = (
+            #    minimongo.Index("name"),
+            #)
+
 
 #    field :user, :type => String
 #    field :num_slaves, :type => Integer
@@ -69,11 +113,12 @@ class DQCCdb():
 
 
     # return list of all rendersessions
+    @staticmethod
     def fetch_rendersession_list():
         print("DEBUG: fetch_rendersession_list()")
 
         # fetch all paid, owned and active rendersessions
-        sessions = None
+        sessions = Rendersession.collection.find_one({"paid_at.ne": None, "paypal_payer_id.ne": None, "active": True})
         #sessions = Rendersession.all(:conditions => { :paid_at.ne => nil, :paypal_payer_id.ne => nil, :active => true })
 
         print("DEBUG: Rendersessions found: "+sessions.length.to_s)
@@ -81,11 +126,12 @@ class DQCCdb():
 
 
     # return list of jobs belonging to a rendersession
+    @staticmethod
     def fetch_rendersession_job_list(rendersession_id):
         print("DEBUG: fetch_rendersession_job_list("+rendersession_id.to_s+")")
 
-        rs = None
+        rs = Rendersession.collection.find_one({"id": rendersession_id})
         #rs = Rendersession.find(rendersession_id)
-        jobs = None
+        jobs = Jobs.collection.find_one({"owner": rs.user})
         #jobs = Job.all(:conditions => {:owner => rs.user})
         return jobs
