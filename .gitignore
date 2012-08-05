@@ -3,6 +3,8 @@ dqcc.log
 dqcc.output
 dqcc.pid
 dqcc_monitor.pid
+dqcc.cfg
 doc
 *.pyc
+
 
