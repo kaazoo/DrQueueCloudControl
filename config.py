@@ -1,61 +1,50 @@
-class DQCCconfig():
+# global list of slave VMs
+slave_vms = None
 
-    # for ip lookup
-    import socket
+# global list of connected slave
+slave_list = None
 
+# sleep time for daemon
+sleep_interval = None
 
-#  # find out local ip address
-#  def self.local_ip
-#    orig, Socket.do_not_reverse_lookup = Socket.do_not_reverse_lookup, true  # turn off reverse DNS resolution temporarily
-#
-#    UDPSocket.open do |s|
-#      s.connect '64.233.187.99', 1
-#      s.addr.last
-#    end
-#  ensure
-#    Socket.do_not_reverse_lookup = orig
-#  end
+# park engines for a given time or shut them down (immediately or with delay)
+stop_behaviour = None
 
+# parking pool for waiting slaves
+parking_pool = None
 
-    # sleep time for daemon
-    sleep_interval = 2
+# maximum parking time
+park_time = None
 
-    # park engines for a given time or shut them down (immediately or with delay)
-    # values: "shutdown", "shutdown_with_delay", "park"
-    stop_behaviour = "shutdown_with_delay"
+# maximum number of VMs
+max_vms = None
 
-    # parking pool for waiting slaves
-    parking_pool = "garage"
+# available render pool types
+pool_types = None
 
-    # maximum parking time
-    park_time = 600
+# time range for caching slave data
+cache_time = None
 
-    # maximum number of VMs
-    max_vms = 20
+# do not perform any real actions on cloud
+testmode = None
 
-    # available render pool types
-    pool_types = ['blender']
+# maximum time to wait for unknown slave VMs
+max_wait = None
 
-    # time range for caching slave data
-    cache_time = 60
+# encryption salt for EBS volumes
+ebs_encryption_salt = None
 
-    # do not perform any real actions on cloud
-    testmode = True
+# DQOR database config
+db_dqor_name = None
+db_dqor_host = None
 
-    # maximum time to wait for unknown slave VMs
-    max_wait = 600
-
-    # encryption salt for EBS volumes
-    ebs_encryption_salt = "31c6772642cb2dce5a34f0a702f9470dd"
-
-    # DQOR database config
-    db_dqor_name = "ipythondb"
-    db_dqor_host = "localhost"
-
-    # EC2 environment
-    ec2_slave_ami = 'ami-9999999999'
-    ec2_key_name = 'mykey'
-    ec2_instance_type = 't1.micro'
-    ec2_avail_zone = 'eu-west-1a'
-    ec2_sec_group = 'mysecgroup'
+# EC2 environment
+ec2_slave_ami = None
+ec2_key_name = None
+ec2_instance_type = None
+ec2_region = None
+ec2_avail_zone = None
+ec2_sec_group = None
+ec2_access_key_id = None
+ec2_secret_access_key = None
 
