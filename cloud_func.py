@@ -1,10 +1,14 @@
 class DQCCcloud():
 
     # for EC2 control
-    from boto.ec2.connection import EC2Connection
+    import boto.ec2
 
     # for hash computation
     #require 'digest/md5'
+
+    # config shared accross all modules/classes
+    global DQCCconfig
+    import config as DQCCconfig
 
     # for Base64 encoding
     import base64
@@ -12,44 +16,24 @@ class DQCCcloud():
     # for string functions
     import string
 
-    # read config from config file
-    import ConfigParser
-    config = ConfigParser.RawConfigParser()
-    config.read("dqcc.cfg")
-
-    # store config
-    global cloud_config
-    cloud_config = {}
-    cloud_config["testmode"] = config.getboolean("DQCCconfig", "testmode")
-    cloud_config["max_wait"] = config.getint("DQCCconfig", "max_wait")
-    cloud_config["ebs_encryption_salt"] = config.get("DQCCconfig", "ebs_encryption_salt")
-    cloud_config["ec2_slave_ami"] = config.get("DQCCconfig", "ec2_slave_ami")
-    cloud_config["ec2_key_name"] = config.get("DQCCconfig", "ec2_key_name")
-    cloud_config["ec2_instance_type"] = config.get("DQCCconfig", "ec2_instance_type")
-    cloud_config["ec2_avail_zone"] = config.get("DQCCconfig", "ec2_avail_zone")
-    cloud_config["ec2_sec_group"] = config.get("DQCCconfig", "ec2_sec_group")
-    cloud_config["ec2_access_key_id"] = config.get("DQCCconfig", "ec2_access_key_id")
-    cloud_config["ec2_secret_access_key"] = config.get("DQCCconfig", "ec2_secret_access_key")
-
     # debug config
     print("\nCloud configuration:")
-    print(cloud_config["testmode"])
-    print(cloud_config["max_wait"])
-    print(cloud_config["ebs_encryption_salt"])
-    print(cloud_config["ec2_slave_ami"])
-    print(cloud_config["ec2_key_name"])
-    print(cloud_config["ec2_instance_type"])
-    print(cloud_config["ec2_avail_zone"])
-    print(cloud_config["ec2_sec_group"])
-    print(cloud_config["ec2_access_key_id"])
-    print(cloud_config["ec2_secret_access_key"])
-
-    global slave_vms
-    slave_vms = []
+    print("testmode = " + str(DQCCconfig.testmode))
+    print("max_wait = " + str(DQCCconfig.max_wait))
+    print("ebs_encryption_salt = " + DQCCconfig.ebs_encryption_salt)
+    print("ec2_slave_ami = " + DQCCconfig.ec2_slave_ami)
+    print("ec2_key_name = " + DQCCconfig.ec2_key_name)
+    print("ec2_instance_type = " + DQCCconfig.ec2_instance_type)
+    print("ec2_region = " + DQCCconfig.ec2_region)
+    print("ec2_avail_zone = " + DQCCconfig.ec2_avail_zone)
+    print("ec2_sec_group = " + DQCCconfig.ec2_sec_group)
+    print("ec2_access_key_id = " + DQCCconfig.ec2_access_key_id)
+    print("ec2_secret_access_key = " + DQCCconfig.ec2_secret_access_key)
 
     # connect to EC2
     global ec2
-    ec2 = EC2Connection(aws_access_key_id = cloud_config["ec2_access_key_id"], aws_secret_access_key = cloud_config["ec2_secret_access_key"])
+    ### TODO handle exception
+    ec2 = boto.ec2.connect_to_region(DQCCconfig.ec2_region, aws_access_key_id=DQCCconfig.ec2_access_key_id, aws_secret_access_key=DQCCconfig.ec2_secret_access_key)
 
 
     # determine external IP address of local machine
@@ -64,7 +48,6 @@ class DQCCcloud():
         print("DEBUG: start_vm(" + user_id.to_s + ", " + vm_type.to_s + ", " + pool_list.to_s + ")")
 
         global ec2
-        global slave_vms
 
         # generate provisioning data
         #hostname = 'slave-'+Digest::MD5.hexdigest(rand.to_s)
@@ -74,8 +57,8 @@ class DQCCcloud():
 
         try:
             # start new instance
-            if cloud_config["testmode"] != True:
-                instance_data = ec2.run_instances(cloud_config["ec2_slave_ami"], key_name = cloud_config["ec2_key_name"], instance_type = cloud_config["ec2_instance_type"], security_groups=[cloud_config["ec2_sec_group"]], min_count = 1, max_count = 1, user_data = user_data, placement = cloud_config["ec2_avail_zone"])
+            if DQCCconfig.testmode != True:
+                instance_data = ec2.run_instances(DQCCconfig.ec2_slave_ami, key_name = DQCCconfig.ec2_key_name, instance_type = DQCCconfig.ec2_instance_type, security_groups=[DQCCconfig.ec2_sec_group], min_count = 1, max_count = 1, user_data = user_data, placement = DQCCconfig.ec2_avail_zone)
         except "AWS::InstanceLimitExceeded":
             print("ERROR: Maximum number of VMs reached.")
             return None
@@ -88,7 +71,7 @@ class DQCCcloud():
     
         # append slave VM to list of known VMs
         ### add slave object to some kind of super global variable
-        slave_vms.append(slave)
+        DQCCconfig.slave_vms.append(slave)
     
         return slave
 
@@ -101,7 +84,7 @@ class DQCCcloud():
         global ec2
 
         # stop running instance
-        if cloud_config["testmode"] != True:
+        if DQCCconfig.testmode != True:
             ec2.terminate_instances(instance_ids=[slave.instance_id])
         return True
 
@@ -113,8 +96,8 @@ class DQCCcloud():
     
         # check how long this VM is running
         instance_launch_time = DateTime.parse(slave.launch_time)
-        if (Time.now.to_i - instance_launch_time.to_i) > cloud_config["max_wait"]:
-            print("DEBUG: slave instance " + slave.instance_id.to_s + " seems to be stuck for more than " + cloud_config["max_wait"].to_s + " seconds. Stopping VM.")
+        if (Time.now.to_i - instance_launch_time.to_i) > DQCCconfig.max_wait:
+            print("DEBUG: slave instance " + str(slave.instance_id) + " seems to be stuck for more than " + str(DQCCconfig.max_wait) + " seconds. Stopping VM.")
             stop_vm(slave)
             return True
         else:
@@ -153,24 +136,20 @@ class DQCCcloud():
     def get_slave_vms():
         print("DEBUG: get_slave_vms()")
         
-        global slave_vms
         global ec2
-        global cloud_config
+        global DQCCconfig
         
         # reuse old list if existing
         ### access super global variable
-        if slave_vms != None:
-          registered_vms = slave_vms
+        if DQCCconfig.slave_vms != None:
+          registered_vms = DQCCconfig.slave_vms
         else:
           registered_vms = []
     
-        # connect to EC2
-        #DQCCcloud.ec2_connect()
-    
         # walk through all registered VMs
-        for instance in ec2.get_all_instances(filters = {"ImageId": cloud_config["ec2_slave_ami"]}).instances:
+        for instance in ec2.get_all_instances(filters = {"image_id": DQCCconfig.ec2_slave_ami}):
             # we are not interested in terminated/stopping and non-slave VMs
-            if (("running" in instance.state) or ("pending" in instance.state)) and (instance.image_id == cloud_config["ec2_slave_ami"]):
+            if (("running" in instance.state) or ("pending" in instance.state)) and (instance.image_id == DQCCconfig.ec2_slave_ami):
                 # check age of VMs
                 print("DEBUG: Instance " + instance.id + " was started " + (Time.now.to_i - DateTime.parse(instance.launch_time).to_i).to_s + " seconds ago.")
                 # update info about registered VMs if they are known
@@ -254,13 +233,11 @@ class DQCCcloud():
     def search_registered_vm_by_instance_id(instance_id):
         print("DEBUG: search_registered_vm_by_instance_id(" + instance_id.to_s + ")")
 
-        global slave_vms
-
         if instance_id == None:
           return None
 
-        if slave_vms != None:
-            for reg_vm in slave_vms:
+        if DQCCconfig.slave_vms != None:
+            for reg_vm in DQCCconfig.slave_vms:
                 if reg_vm.instance_id == instance_id:
                     # found
                     return reg_vm
@@ -273,13 +250,13 @@ class DQCCcloud():
     def search_registered_vm_by_address(address):
         print("DEBUG: search_registered_vm_by_address(" + address.to_s + ")")
 
-        global slave_vms
+        #global slave_vms
 
         if address == None:
             return None
 
-        if slave_vms != None:
-            for reg_vm in slave_vms:
+        if DQCCconfig.slave_vms != None:
+            for reg_vm in DQCCconfig.slave_vms:
                 if reg_vm.vpn_ip == address:
                     # found
                     return reg_vm
@@ -361,7 +338,7 @@ class DQCCcloud():
           return None
 
         # encryption input
-        enc_input = cloud_config["ebs_encryption_salt"]
+        enc_input = DQCCconfig.ebs_encryption_salt
 
         # attach volume
         # @ec2.attach_volume({:volume_id => vol_id, :instance_id => local_instance_id, :device => device_name})
