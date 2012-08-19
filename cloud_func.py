@@ -1,23 +1,33 @@
+import os
+
+# for Base64 encoding
+import base64
+
+# text coloring
+from termcolor import colored
+
+# for TCP/IP sockets
+import socket
+
+# SlaveVM class definition
+from slave_vm import SlaveVM
+
+# date & time calculations
+import datetime
+
+
 class DQCCcloud():
 
     # for EC2 control
     import boto.ec2
 
-    # for hash computation
-    #require 'digest/md5'
-
     # config shared accross all modules/classes
     global DQCCconfig
     import config as DQCCconfig
 
-    # for Base64 encoding
-    import base64
-
-    # for string functions
-    import string
 
     # debug config
-    print("\nCloud configuration:")
+    print(colored("\nCloud configuration:", 'yellow', attrs=['reverse']))
     print("testmode = " + str(DQCCconfig.testmode))
     print("max_wait = " + str(DQCCconfig.max_wait))
     print("ebs_encryption_salt = " + DQCCconfig.ebs_encryption_salt)
@@ -37,40 +47,50 @@ class DQCCcloud():
 
 
     # determine external IP address of local machine
+    @staticmethod
     def get_local_ip():
-        ### add some magic code here
-        return "127.0.0.1"
+        if DQCCconfig.external_ip != None:
+            print(colored("INFO: Using cached external IP address " + str(DQCCconfig.external_ip) + ".", 'yellow'))
+        else:
+            sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            sock.connect(("google.com", 80))
+            DQCCconfig.external_ip = sock.getsockname()[0]
+            sock.close()
+            print(colored("INFO: Determined external IP address as " + str(DQCCconfig.external_ip) + ".", 'yellow'))
+        return DQCCconfig.external_ip
 
 
     # create slave VM instance
     @staticmethod
     def start_vm(user_id, vm_type, pool_list):
-        print("DEBUG: start_vm(" + user_id.to_s + ", " + vm_type.to_s + ", " + pool_list.to_s + ")")
-
-        global ec2
+        print(colored("DEBUG: DQCCcloud.start_vm(" + str(user_id) + ", " + str(vm_type) + ", " + str(pool_list) + ")", 'green'))
 
         # generate provisioning data
-        #hostname = 'slave-'+Digest::MD5.hexdigest(rand.to_s)
-        hostname = None
-        user_data = prepare_user_data(user_id, hostname, pool_list)
-        prepare_vpn_cert(hostname, get_local_ip())
+        hostname = "slave-" + os.urandom(16).encode('hex')
+        user_data = DQCCcloud.prepare_user_data(user_id, hostname, pool_list)
+        DQCCcloud.prepare_vpn_cert(hostname, DQCCcloud.get_local_ip())
 
         try:
             # start new instance
-            if DQCCconfig.testmode != True:
+            if DQCCconfig.testmode == True:
+                print(colored("INFO: Testmode - I would run 'ec2.run_instances(...)' now.", "yellow"))
+            else:
                 instance_data = ec2.run_instances(DQCCconfig.ec2_slave_ami, key_name = DQCCconfig.ec2_key_name, instance_type = DQCCconfig.ec2_instance_type, security_groups=[DQCCconfig.ec2_sec_group], min_count = 1, max_count = 1, user_data = user_data, placement = DQCCconfig.ec2_avail_zone)
         except "AWS::InstanceLimitExceeded":
-            print("ERROR: Maximum number of VMs reached.")
+            print(colored("ERROR: Maximum number of VMs reached.", 'red'))
             return None
     
         # keep VM info
-        created_instance = instance_data.instances[0]
-        slave = SlaveVM.new(created_instance.id, created_instance.instance_type, user_id)
+        if DQCCconfig.testmode == True:
+            random_id = os.urandom(4).encode('hex')
+            slave = SlaveVM(random_id, DQCCconfig.ec2_instance_type, user_id)
+        else:
+            created_instance = instance_data.instances[0]
+            slave = SlaveVM(created_instance.id, created_instance.instance_type, user_id)
         slave.hostname = hostname
         slave.pool_name_list = pool_list
     
         # append slave VM to list of known VMs
-        ### add slave object to some kind of super global variable
         DQCCconfig.slave_vms.append(slave)
     
         return slave
@@ -79,9 +99,7 @@ class DQCCcloud():
     # terminate a running slave VM
     @staticmethod
     def stop_vm(slave):
-        print("DEBUG: stop_vm("+slave.instance_id+")")
-
-        global ec2
+        print(colored("DEBUG: DQCCcloud.stop_vm("+slave.instance_id+")", 'green'))
 
         # stop running instance
         if DQCCconfig.testmode != True:
@@ -92,11 +110,11 @@ class DQCCcloud():
     # check if max_wait is reached
     @staticmethod
     def check_max_wait(slave):
-        print("DEBUG: check_max_wait(" + slave.instance_id + ")")
+        print(colored("DEBUG: DQCCcloud.check_max_wait(" + slave.instance_id + ")", 'green'))
     
         # check how long this VM is running
-        instance_launch_time = DateTime.parse(slave.launch_time)
-        if (Time.now.to_i - instance_launch_time.to_i) > DQCCconfig.max_wait:
+        instance_launch_time = datetime.datetime.fromtimestamp(slave.launch_time)
+        if ( int(time.time()) - int(instance_launch_time) ) > DQCCconfig.max_wait:
             print("DEBUG: slave instance " + str(slave.instance_id) + " seems to be stuck for more than " + str(DQCCconfig.max_wait) + " seconds. Stopping VM.")
             stop_vm(slave)
             return True
@@ -107,40 +125,30 @@ class DQCCcloud():
     # apply changes to startup script and convert to base64
     @staticmethod
     def prepare_user_data(user_id, hostname, pool_list):
-        print("DEBUG: prepare_user_data("+hostname+", \""+pool_list+"\")")
+        print(colored("DEBUG: DQCCcloud.prepare_user_data(" + hostname + ", \"" + pool_list + "\")", 'green'))
 
-        master = ENV['DRQUEUE_MASTER_FOR_VMS']
-        download_ip = get_local_ip()
-        template_path = os.path.join(os.getcwd(), 'startup_script.template')
+        master = os.getenv("DRQUEUE_MASTER_FOR_VMS")
+        download_ip = DQCCcloud.get_local_ip()
+        template_path = os.path.join(os.getcwd(), "startup_script.template")
 
         template = open(template_path)
-        script_body = template.readlines()
-        script_body = string.replace(script_body, "REPL_HOSTNAME", hostname)
-        script_body = string.replace(script_body, "REPL_MASTER", master)
-        script_body = string.replace(script_body, "REPL_DL_SERVER", download_ip)
-        script_body = string.replace(script_body, "REPL_POOL", pool_list)
-        script_body = string.replace(script_body, "REPL_USERDIR", user_id)
+        script_body = template.read()
+        script_body = script_body.replace("REPL_HOSTNAME", hostname)
+        script_body = script_body.replace("REPL_MASTER", master)
+        script_body = script_body.replace("REPL_DL_SERVER", download_ip)
+        script_body = script_body.replace("REPL_POOL", pool_list)
+        script_body = script_body.replace("REPL_USERDIR", user_id)
 
-        #script_body = None
-        #script_body = `sed 's/REPL_HOSTNAME/#{hostname}/g' #{tmpl_path} |
-        # sed 's/REPL_MASTER/#{master}/g' |
-        # sed 's/REPL_DL_SERVER/#{download_ip}/g' |
-        # sed 's/REPL_POOL/#{pool_list}/g' |
-        # sed 's/REPL_USERDIR/#{user_id}/g'`
-
-        return base64.b64encode(script_body)
+        b64 = base64.b64encode(script_body)
+        return b64
 
 
     # fetch list of running slave VMs
     @staticmethod
     def get_slave_vms():
-        print("DEBUG: get_slave_vms()")
-        
-        global ec2
-        global DQCCconfig
+        print(colored("DEBUG: DQCCcloud.get_slave_vms()", 'green'))
         
         # reuse old list if existing
-        ### access super global variable
         if DQCCconfig.slave_vms != None:
           registered_vms = DQCCconfig.slave_vms
         else:
@@ -151,7 +159,7 @@ class DQCCcloud():
             # we are not interested in terminated/stopping and non-slave VMs
             if (("running" in instance.state) or ("pending" in instance.state)) and (instance.image_id == DQCCconfig.ec2_slave_ami):
                 # check age of VMs
-                print("DEBUG: Instance " + instance.id + " was started " + (Time.now.to_i - DateTime.parse(instance.launch_time).to_i).to_s + " seconds ago.")
+                print("DEBUG: Instance " + instance.id + " was started " + str( int(time.time()) - instance.launch_time ) + " seconds ago.")
                 # update info about registered VMs if they are known
                 reg_vm = search_registered_vm_by_instance_id(instance.id)
                 if reg_vm != None:
@@ -179,7 +187,7 @@ class DQCCcloud():
                             if check_max_wait(reg_vm):
                                 next
                         else:
-                            print("DEBUG (2/3): Queue info of VM " + instance.id + " is \n" + reg_vm.queue_info.to_s + ".")
+                            print("DEBUG (2/3): Queue info of VM " + instance.id + " is \n" + str(reg_vm.queue_info) + ".")
                             # get list of pools from DrQueue computer info
                             reg_vm.pool_name_list = DQCCqueue.concat_pool_names_of_computer(reg_vm)
                     print("DEBUG (3/3): Entry for VM " + instance.id + " is updated.")
@@ -209,7 +217,7 @@ class DQCCcloud():
                             if check_max_wait(new_vm):
                                 next
                         else:
-                            print("DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + new_vm.queue_info.to_s + ".")
+                            print("DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + str(new_vm.queue_info) + ".")
                             # set hostname if possible
                             if new_vm.queue_info != None:
                                 new_vm.hostname = str(new_vm.queue_info['hostname'])
@@ -231,7 +239,7 @@ class DQCCcloud():
     # look if an instance_id is already in the list
     @staticmethod
     def search_registered_vm_by_instance_id(instance_id):
-        print("DEBUG: search_registered_vm_by_instance_id(" + instance_id.to_s + ")")
+        print(colored("DEBUG: DQCCcloud.search_registered_vm_by_instance_id(" + str(instance_id) + ")", 'green'))
 
         if instance_id == None:
           return None
@@ -248,9 +256,7 @@ class DQCCcloud():
     # look if an address is already in the list
     @staticmethod
     def search_registered_vm_by_address(address):
-        print("DEBUG: search_registered_vm_by_address(" + address.to_s + ")")
-
-        #global slave_vms
+        print(colored("DEBUG: DQCCcloud.search_registered_vm_by_address(" + str(address) + ")", 'green'))
 
         if address == None:
             return None
@@ -267,19 +273,24 @@ class DQCCcloud():
     # create a special vpn certificate for slave
     @staticmethod
     def prepare_vpn_cert(hostname, server_ip):
-        print("DEBUG: prepare_vpn_cert("+hostname+", "+server_ip+")")
+        print(colored("DEBUG: DQCCcloud.prepare_vpn_cert("+hostname+", "+server_ip+")", 'green'))
 
         ### TODO: check for valid values as this goes directly to a shell
-        script_path = os.path.join(File.dirname(__FILE__), 'generate_vpn_client_cert.sh')
-        # `sudo #{script_path} #{hostname} #{server_ip}`
+        script_path = os.path.join(os.getcwd(), "generate_vpn_client_cert.sh")
+        if DQCCconfig.testmode == True:
+            print(colored("INFO: I would run 'sudo " + script_path + " " + hostname + " " + server_ip + "' now.", "yellow"))
+        else:
+            ### TODO: exec script here
+            # `sudo #{script_path} #{hostname} #{server_ip}`
+            pass
 
 
     # look up VPN IP address of VM
     @staticmethod
     def lookup_vpn_ip(private_ip):
-        print("DEBUG: lookup_vpn_ip("+private_ip.to_s+")")
+        print(colored("DEBUG: DQCCcloud.lookup_vpn_ip(" + str(private_ip) + ")", 'green'))
 
-        # private_ip can be nil if a VM has just been started
+        # private_ip can be None if a VM has just been started
         if private_ip == None:
             return None
 
@@ -296,10 +307,10 @@ class DQCCcloud():
     # create a new EBS volume
     @staticmethod
     def register_ebs_volume(size):
-        print("DEBUG: register_ebs_volume("+size.to_s+")")
+        print(colored("DEBUG: DQCCcloud.register_ebs_volume(" + str(size) + ")", 'green'))
 
         vol = None
-        # @ec2.create_volume({:availability_zone => 'eu-west-1a', :size => size.to_s})
+        # @ec2.create_volume({:availability_zone => 'eu-west-1a', :size => str(size)})
 
         return vol
 
@@ -307,7 +318,7 @@ class DQCCcloud():
     # provision newly created volume
     @staticmethod
     def prepare_ebs_volume(vol_id):
-        print("DEBUG: prepare_ebs_storage("+vol_id.to_s+")")
+        print(colored("DEBUG: DQCCcloud.prepare_ebs_storage(" + str(vol_id) + ")", 'green'))
 
         # wait until volume is ready
         while(True):
@@ -322,10 +333,9 @@ class DQCCcloud():
         # `curl http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null`
 
         # build device name
-        arr = range('d','z').to_a
         found_free = False
-        for arr_char in arr:
-            device_name = "/dev/sd" + arr_char
+        for drive_char in range(ord('d'), ord('z')):
+            device_name = "/dev/sd" + chr(drive_char)
             # check if device is existing
             if File.blockdev(device_name):
                 next
@@ -351,7 +361,7 @@ class DQCCcloud():
     # create a encrypted storage volume for a user
     @staticmethod
     def create_secure_storage(user_id, size):
-        print("DEBUG: create_secure_storage("+user_id.to_s+", "+size.to_s+")")
+        print(colored("DEBUG: DQCCcloud.create_secure_storage(" + str(user_id) + ", " + str(size) + ")", 'green'))
 
         # create new volume
         vol = register_ebs_volume(size)

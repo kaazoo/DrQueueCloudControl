@@ -56,11 +56,15 @@ class Rendersession(Document):
 
 class DQCCdb():
 
+    # text coloring
+    global colored
+    from termcolor import colored
+
     # config shared accross all modules/classes
     import config as DQCCconfig
 
     # debug config
-    print("\nDB configuration:")
+    print(colored("\nDB configuration:", 'yellow', attrs=['reverse']))
     print("db_dqor_host = " + DQCCconfig.db_dqor_host)
     print("db_dqor_name = " + DQCCconfig.db_dqor_name)
 
@@ -75,17 +79,18 @@ class DQCCdb():
     # return list of all rendersessions
     @staticmethod
     def fetch_rendersession_list():
-        print("DEBUG: fetch_rendersession_list()")
+        print(colored("DEBUG: DQCCdb.fetch_rendersession_list()", 'green'))
         # fetch all paid, owned and active rendersessions
         sessions = Rendersession.objects(paid_at__ne=None, paypal_payer_id__ne=None, active=True)
-        print("DEBUG: Rendersessions found: " + str(len(sessions)))
+        print(colored("INFO: Rendersessions found: " + str(len(sessions)), 'yellow'))
         return sessions
 
 
     # return list of jobs belonging to a rendersession
     @staticmethod
     def fetch_rendersession_job_list(rendersession):
-        print("DEBUG: fetch_rendersession_job_list(" + str(rendersession) + ")")
+        print(colored("DEBUG: DQCCdb.fetch_rendersession_job_list(" + str(rendersession) + ")", 'green'))
         # search for all jobs of the rendersession's owner
         jobs = Job.objects(owner=rendersession.user)
+        print(colored("INFO: Jobs found: " + str(len(jobs)), 'yellow'))
         return jobs

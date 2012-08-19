@@ -4,6 +4,9 @@ slave_vms = None
 # global list of connected slave
 slave_list = None
 
+# external ip address
+external_ip = None
+
 # sleep time for daemon
 sleep_interval = None
 
