@@ -13,7 +13,9 @@ import socket
 from slave_vm import SlaveVM
 
 # date & time calculations
+import time
 import datetime
+import dateutil.parser
 
 # for process handling
 import subprocess
@@ -125,8 +127,8 @@ class DQCCcloud():
         print(colored("DEBUG: DQCCcloud.check_max_wait(" + slave.instance_id + ")", 'green'))
     
         # check how long this VM is running
-        instance_launch_time = datetime.datetime.fromtimestamp(slave.launch_time)
-        if ( int(time.time()) - int(instance_launch_time) ) > DQCCconfig.max_wait:
+        #instance_launch_time = datetime.datetime.fromtimestamp(slave.launch_time)
+        if ( int(time.time() - slave.launch_time) ) > DQCCconfig.max_wait:
             print("DEBUG: slave instance " + str(slave.instance_id) + " seems to be stuck for more than " + str(DQCCconfig.max_wait) + " seconds. Stopping VM.")
             stop_vm(slave)
             return True
@@ -167,11 +169,14 @@ class DQCCcloud():
           registered_vms = []
     
         # walk through all registered VMs
-        for instance in ec2.get_all_instances(filters = {"image_id": DQCCconfig.ec2_slave_ami}):
+        for instance in ec2.get_all_instances(filters = {"image_id": DQCCconfig.ec2_slave_ami})[0].instances:
             # we are not interested in terminated/stopping and non-slave VMs
             if (("running" in instance.state) or ("pending" in instance.state)) and (instance.image_id == DQCCconfig.ec2_slave_ami):
                 # check age of VMs
-                print("DEBUG: Instance " + instance.id + " was started " + str( int(time.time()) - instance.launch_time ) + " seconds ago.")
+                instance_launch_parsed_local = dateutil.parser.parse(instance.launch_time)
+                instance_launch_parsed_utc = instance_launch_parsed_local.astimezone(dateutil.tz.tzutc())
+                instance_launch_timestamp = time.mktime(instance_launch_parsed_utc.timetuple())
+                print("DEBUG: Instance " + instance.id + " was started " + str( int(time.time() - instance_launch_timestamp) ) + " seconds ago.")
                 # update info about registered VMs if they are known
                 reg_vm = search_registered_vm_by_instance_id(instance.id)
                 if reg_vm != None:
@@ -181,7 +186,7 @@ class DQCCcloud():
                     reg_vm.private_dns = instance.private_dns_name
                     reg_vm.private_ip = instance.private_ip_address
                     reg_vm.state = instance.state
-                    reg_vm.launch_time = instance.launch_time
+                    reg_vm.launch_time = instance_launch_timestamp
                     # get VPN IP from private IP
                     reg_vm.vpn_ip = lookup_vpn_ip(instance.private_ip_address)
                     if reg_vm.vpn_ip == None:
@@ -211,7 +216,7 @@ class DQCCcloud():
                     new_vm.private_dns = instance.private_dns_name
                     new_vm.private_ip = instance.private_ip_address
                     new_vm.state = instance.state
-                    new_vm.launch_time = instance.launch_time
+                    new_vm.launch_time = instance_launch_timestamp
                     # get VPN IP from private IP
                     new_vm.vpn_ip = lookup_vpn_ip(instance.private_ip_address)
                     if new_vm.vpn_ip == None:

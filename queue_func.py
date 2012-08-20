@@ -231,7 +231,7 @@ class DQCCqueue():
                 # shutdown slaves only 5 minutes before next full hour
                 elif DQCCconfig.stop_behaviour == "shutdown_with_delay":
                     # check age of VM
-                    age_in_seconds = int(time.time()) - vm.launch_time
+                    age_in_seconds = int(time.time() - vm.launch_time)
                     print(colored("INFO: Instance " + vm.instance_id + " was started " + str(age_in_seconds) + " seconds ago.", 'yellow'))
                     seconds_to_next_hour = 3600 - age_in_seconds.remainder(3600)
                     if seconds_to_next_hour <= 300:
