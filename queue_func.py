@@ -165,8 +165,8 @@ class DQCCqueue():
         # look for slaves which have just been started
         starting_slaves = DQCCqueue.get_starting_user_slaves(vm_type, user_id)
         if len(starting_slaves) > 0:
-            usable = [starting_slaves.length, remaining].min
-            print(colored("INFO: Found " + str(usable) + " starting slaves of type \"" + vm_type + "\".", 'yellow'))
+            usable = min(len(starting_slaves), remaining)
+            print(colored("INFO: Found " + str(usable) + " usable starting slaves of type \"" + vm_type + "\".", 'yellow'))
             # work on a number of starting slaves
             for i in range(0, (usable - 1)):
                 print(colored("INFO: Waiting for "+starting_slaves[i].instance_id+" to finish startup.", 'yellow'))
@@ -174,7 +174,7 @@ class DQCCqueue():
                 remaining -= usable
             print(colored("INFO: Remaining slaves that need to be started: " + str(remaining), 'yellow'))
 
-        # reuse park slaves if configured
+        # reuse parked slaves if configured
         if DQCCconfig.stop_behaviour == "park":
             # look for unused slaves and add them to user pool(s)
             if len(parked_slaves = get_parked_user_slaves(vm_type, user_id)) > 0:
@@ -194,7 +194,7 @@ class DQCCqueue():
         # we still need to start more
         print(colored("INFO: Remaining slaves that need to be started: " + str(remaining), 'yellow'))
         if remaining > 0:
-            for i in range(0, (remaining - 1)):
+            for i in range(0, remaining):
                 # start up new slave VM
                 slave = DQCCcloud.start_vm(user_id, vm_type, DQCCqueue.concat_pool_names_of_user(user_id))
                 if slave == None:

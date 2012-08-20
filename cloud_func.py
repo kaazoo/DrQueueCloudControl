@@ -15,6 +15,9 @@ from slave_vm import SlaveVM
 # date & time calculations
 import datetime
 
+# for process handling
+import subprocess
+
 
 class DQCCcloud():
 
@@ -99,10 +102,12 @@ class DQCCcloud():
     # terminate a running slave VM
     @staticmethod
     def stop_vm(slave):
-        print(colored("DEBUG: DQCCcloud.stop_vm("+slave.instance_id+")", 'green'))
+        print(colored("DEBUG: DQCCcloud.stop_vm(" + slave.instance_id + ")", 'green'))
 
         # stop running instance
-        if DQCCconfig.testmode != True:
+        if DQCCconfig.testmode == True:
+            print(colored("INFO: Testmode - I would run 'ec2.terminate_instances(...)' now.", "yellow"))
+        else:
             ec2.terminate_instances(instance_ids=[slave.instance_id])
         return True
 
@@ -273,16 +278,20 @@ class DQCCcloud():
     # create a special vpn certificate for slave
     @staticmethod
     def prepare_vpn_cert(hostname, server_ip):
-        print(colored("DEBUG: DQCCcloud.prepare_vpn_cert("+hostname+", "+server_ip+")", 'green'))
+        print(colored("DEBUG: DQCCcloud.prepare_vpn_cert(" + hostname + ", " + server_ip + ")", 'green'))
 
         ### TODO: check for valid values as this goes directly to a shell
         script_path = os.path.join(os.getcwd(), "generate_vpn_client_cert.sh")
         if DQCCconfig.testmode == True:
-            print(colored("INFO: I would run 'sudo " + script_path + " " + hostname + " " + server_ip + "' now.", "yellow"))
+            print(colored("INFO: Testmode - I would run 'sudo " + script_path + " " + hostname + " " + server_ip + "' now.", "yellow"))
         else:
-            ### TODO: exec script here
-            # `sudo #{script_path} #{hostname} #{server_ip}`
-            pass
+            command = "sudo " + script_path + " " + hostname + " " + server_ip
+            try:
+                p = subprocess.Popen(command, shell=True, stderr=subprocess.STDOUT)
+            except OSError as e:
+                errno, strerror = e.args
+                print(colored("ERROR: OSError({0}) while executing command: " + errno + " " + strerror, 'red'))
+
 
 
     # look up VPN IP address of VM
