@@ -168,7 +168,7 @@ class DQCCqueue():
             usable = min(len(starting_slaves), remaining)
             print(colored("INFO: Found " + str(usable) + " usable starting slaves of type \"" + vm_type + "\".", 'yellow'))
             # work on a number of starting slaves
-            for i in range(0, (usable - 1)):
+            for i in range(0, usable):
                 print(colored("INFO: Waiting for "+starting_slaves[i].instance_id+" to finish startup.", 'yellow'))
             if remaining >= usable:
                 remaining -= usable
@@ -177,11 +177,12 @@ class DQCCqueue():
         # reuse parked slaves if configured
         if DQCCconfig.stop_behaviour == "park":
             # look for unused slaves and add them to user pool(s)
-            if len(parked_slaves = get_parked_user_slaves(vm_type, user_id)) > 0:
-                usable = [parked_slaves.length, remaining].min
+            parked_slaves = get_parked_user_slaves(vm_type, user_id)
+            if len(parked_slaves) > 0:
+                usable = min(len(parked_slaves), remaining)
                 print(colored("INFO: Found " + str(usable) + " parked slaves of type \""+vm_type+"\".", 'yellow'))
                 # work on a number of parked slaves
-                for i in range(0, (usable - 1)):
+                for i in range(0, usable):
                     # add to user pool(s)
                     print(colored("INFO: I will add slave \"" + parked_slaves[i].hostname + "\" to pools \"" + DQCCqueue.concat_pool_names_of_user(user_id) + "\".", 'yellow'))
                     set_slave_pool(parked_slaves[i], DQCCqueue.concat_pool_names_of_user(user_id))
@@ -209,8 +210,8 @@ class DQCCqueue():
         # work on a number of running slaves
         user_slaves = DQCCqueue.get_running_user_slaves(vm_type, user_id)
         if len(user_slaves) > 0:
-            usable = [user_slaves.length, diff].min
-            for i in range(0, (usable - 1)):
+            usable = min(len(user_slaves), diff)
+            for i in range(0, usable):
                 vm = user_slaves[i]
 
                 # park slaves for later reuse if configured

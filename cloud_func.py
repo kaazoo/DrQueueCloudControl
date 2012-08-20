@@ -45,8 +45,11 @@ class DQCCcloud():
 
     # connect to EC2
     global ec2
-    ### TODO handle exception
-    ec2 = boto.ec2.connect_to_region(DQCCconfig.ec2_region, aws_access_key_id=DQCCconfig.ec2_access_key_id, aws_secret_access_key=DQCCconfig.ec2_secret_access_key)
+    try:
+        ec2 = boto.ec2.connect_to_region(DQCCconfig.ec2_region, aws_access_key_id=DQCCconfig.ec2_access_key_id, aws_secret_access_key=DQCCconfig.ec2_secret_access_key)
+    except socket.gaierror:
+        print(colored("\nERROR: Could not connect to EC2 service. Check your network connection.", 'red'))
+        exit(1)
 
 
     # determine external IP address of local machine
@@ -56,7 +59,11 @@ class DQCCcloud():
             print(colored("INFO: Using cached external IP address " + str(DQCCconfig.external_ip) + ".", 'yellow'))
         else:
             sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            sock.connect(("google.com", 80))
+            try:
+                sock.connect(("google.com", 80))
+            except socket.gaierror:
+                print(colored("\nERROR: Could not determine external IP address. Check your network connection.", 'red'))
+                exit(1)
             DQCCconfig.external_ip = sock.getsockname()[0]
             sock.close()
             print(colored("INFO: Determined external IP address as " + str(DQCCconfig.external_ip) + ".", 'yellow'))
