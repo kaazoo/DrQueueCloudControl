@@ -88,14 +88,14 @@ from cloud_func import DQCCcloud
 
 # sleep a while
 def tea_break():
-    print("\n* waiting a while")
+    print(colored("\nSleeping for " + str(DQCCconfig.sleep_interval) + " seconds.\n", 'yellow', attrs=['reverse']))
     time.sleep(DQCCconfig.sleep_interval)
 
 
+print(colored("\n\nRunning main loop.\n", 'yellow', attrs=['reverse']))
+
 # main daemon loop
 while(True):
-    tea_break()
-
     # fetch running slaves, registered in DrQueue and EC2
     DQCCconfig.slave_list = DQCCconfig.client.query_computer_list()
     DQCCconfig.slave_vms = DQCCcloud.get_slave_vms()
@@ -210,7 +210,27 @@ while(True):
             # skip to next session
             continue
 
+    # debug known slave VMs
+    print(colored("\nINFO: List of known slave VMs:", 'yellow'))
+    for slave in DQCCconfig.slave_vms:
+        print("instance_id " + slave.instance_id)
+        print(" instance_type: " + str(slave.instance_type))
+        print(" owner: " + str(slave.owner))
+        print(" hostname: " + str(slave.hostname))
+        print(" public_dns: " + str(slave.public_dns))
+        print(" private_dns: " + str(slave.private_dns))
+        print(" private_ip: " + str(slave.private_ip))
+        print(" vpn_ip: " + str(slave.vpn_ip))
+        print(" queue_info: " + str(slave.queue_info))
+        print(" state: " + str(slave.state))
+        print(" parked_at: " + str(slave.parked_at))
+        print(" pool_name_list: " + str(slave.pool_name_list))
+        print(" launch_time: " + str(slave.launch_time))
+
     # save resources
     if DQCCconfig.stop_behaviour == "park":
         DQCCqueue.shutdown_old_slaves()
+
+    # make sure the main loop doesn't run too fast
+    tea_break()
 
