@@ -157,6 +157,15 @@ class DQCCcloud():
         return b64
 
 
+    # convert date string to timestamp
+    @staticmethod
+    def datestring_to_timestamp(datestring):
+        date_parsed_local = dateutil.parser.parse(datestring)
+        date_parsed_utc = date_parsed_local.astimezone(dateutil.tz.tzutc())
+        timestamp = time.mktime(date_parsed_utc.timetuple())
+        return instance_launch_timestamp
+
+
     # fetch list of running slave VMs
     @staticmethod
     def get_slave_vms():
@@ -169,87 +178,86 @@ class DQCCcloud():
           registered_vms = []
     
         # walk through all registered VMs
-        for instance in ec2.get_all_instances(filters = {"image_id": DQCCconfig.ec2_slave_ami})[0].instances:
-            # we are not interested in terminated/stopping and non-slave VMs
-            if (("running" in instance.state) or ("pending" in instance.state)) and (instance.image_id == DQCCconfig.ec2_slave_ami):
-                # check age of VMs
-                instance_launch_parsed_local = dateutil.parser.parse(instance.launch_time)
-                instance_launch_parsed_utc = instance_launch_parsed_local.astimezone(dateutil.tz.tzutc())
-                instance_launch_timestamp = time.mktime(instance_launch_parsed_utc.timetuple())
-                print("DEBUG: Instance " + instance.id + " was started " + str( int(time.time() - instance_launch_timestamp) ) + " seconds ago.")
-                # update info about registered VMs if they are known
-                reg_vm = search_registered_vm_by_instance_id(instance.id)
-                if reg_vm != None:
-                    # update existing entry
-                    print("INFO: VM " + instance.id + " is known. Updating entry.")
-                    reg_vm.public_dns = instance.public_dns_name
-                    reg_vm.private_dns = instance.private_dns_name
-                    reg_vm.private_ip = instance.private_ip_address
-                    reg_vm.state = instance.state
-                    reg_vm.launch_time = instance_launch_timestamp
-                    # get VPN IP from private IP
-                    reg_vm.vpn_ip = lookup_vpn_ip(instance.private_ip_address)
-                    if reg_vm.vpn_ip == None:
-                        print("DEBUG (1/3): Could not look up VPN IP of VM " + instance.id + ".")
-                        # stop VM if stuck
-                        if check_max_wait(reg_vm):
-                            next
-                    else:
-                        print("DEBUG (1/3): VPN IP of VM " + instance.id + " is " + reg_vm.vpn_ip + ".")
-                        # get DrQueue computer info from VPN IP
-                        reg_vm.queue_info = DQCCqueue.get_slave_info(reg_vm.vpn_ip)
-                        if reg_vm.queue_info == None:
-                            print("DEBUG (2/3): Could not get queue info of VM " + instance.id + ".")
+        for reservation in ec2.get_all_instances(filters = {"image_id": DQCCconfig.ec2_slave_ami}):
+            for instance in reservation.instances:
+                # we are not interested in terminated/stopping and non-slave VMs
+                if (("running" in instance.state) or ("pending" in instance.state)) and (instance.image_id == DQCCconfig.ec2_slave_ami):
+                    # check age of VMs
+                    instance_launch_timestamp = DQCCcloud.datestring_to_timestamp(instance.launch_time)
+                    print("DEBUG: Instance " + instance.id + " was started " + str( int(time.time() - instance_launch_timestamp) ) + " seconds ago.")
+                    # update info about registered VMs if they are known
+                    reg_vm = search_registered_vm_by_instance_id(instance.id)
+                    if reg_vm != None:
+                        # update existing entry
+                        print("INFO: VM " + instance.id + " is known. Updating entry.")
+                        reg_vm.public_dns = instance.public_dns_name
+                        reg_vm.private_dns = instance.private_dns_name
+                        reg_vm.private_ip = instance.private_ip_address
+                        reg_vm.state = instance.state
+                        reg_vm.launch_time = instance_launch_timestamp
+                        # get VPN IP from private IP
+                        reg_vm.vpn_ip = lookup_vpn_ip(instance.private_ip_address)
+                        if reg_vm.vpn_ip == None:
+                            print("DEBUG (1/3): Could not look up VPN IP of VM " + instance.id + ".")
                             # stop VM if stuck
                             if check_max_wait(reg_vm):
                                 next
                         else:
-                            print("DEBUG (2/3): Queue info of VM " + instance.id + " is \n" + str(reg_vm.queue_info) + ".")
-                            # get list of pools from DrQueue computer info
-                            reg_vm.pool_name_list = DQCCqueue.concat_pool_names_of_computer(reg_vm)
-                    print("DEBUG (3/3): Entry for VM " + instance.id + " is updated.")
-                else:
-                    # create new entry because VM was running before DQCC daemon (possibly crashed)
-                    print("INFO: VM " + instance.id + " is not known. Creating new entry.")
-                    new_vm = SlaveVM.new(instance.id, instance.instance_type, None)
-                    new_vm.public_dns = instance.public_dns_name
-                    new_vm.private_dns = instance.private_dns_name
-                    new_vm.private_ip = instance.private_ip_address
-                    new_vm.state = instance.state
-                    new_vm.launch_time = instance_launch_timestamp
-                    # get VPN IP from private IP
-                    new_vm.vpn_ip = lookup_vpn_ip(instance.private_ip_address)
-                    if new_vm.vpn_ip == None:
-                        print("DEBUG (1/4): Could not look up VPN IP of VM " + instance.id + ".")
-                        # stop VM if stuck
-                        if check_max_wait(new_vm):
-                            next
+                            print("DEBUG (1/3): VPN IP of VM " + instance.id + " is " + reg_vm.vpn_ip + ".")
+                            # get DrQueue computer info from VPN IP
+                            reg_vm.queue_info = DQCCqueue.get_slave_info(reg_vm.vpn_ip)
+                            if reg_vm.queue_info == None:
+                                print("DEBUG (2/3): Could not get queue info of VM " + instance.id + ".")
+                                # stop VM if stuck
+                                if check_max_wait(reg_vm):
+                                    next
+                            else:
+                                print("DEBUG (2/3): Queue info of VM " + instance.id + " is \n" + str(reg_vm.queue_info) + ".")
+                                # get list of pools from DrQueue computer info
+                                reg_vm.pool_name_list = DQCCqueue.concat_pool_names_of_computer(reg_vm)
+                        print("DEBUG (3/3): Entry for VM " + instance.id + " is updated.")
                     else:
-                        print("DEBUG (1/4): VPN IP of VM " + instance.id + " is " + new_vm.vpn_ip + ".")
-                        # get DrQueue computer info from VPN IP
-                        new_vm.queue_info = DQCCqueue.get_slave_info(new_vm.vpn_ip)
-                        if new_vm.queue_info == None:
-                            print("DEBUG (2/4): Could not get queue info of VM " + instance.id + ".")
+                        # create new entry because VM was running before DQCC daemon (possibly crashed)
+                        print("INFO: VM " + instance.id + " is not known. Creating new entry.")
+                        new_vm = SlaveVM.new(instance.id, instance.instance_type, None)
+                        new_vm.public_dns = instance.public_dns_name
+                        new_vm.private_dns = instance.private_dns_name
+                        new_vm.private_ip = instance.private_ip_address
+                        new_vm.state = instance.state
+                        new_vm.launch_time = instance_launch_timestamp
+                        # get VPN IP from private IP
+                        new_vm.vpn_ip = lookup_vpn_ip(instance.private_ip_address)
+                        if new_vm.vpn_ip == None:
+                            print("DEBUG (1/4): Could not look up VPN IP of VM " + instance.id + ".")
                             # stop VM if stuck
                             if check_max_wait(new_vm):
                                 next
                         else:
-                            print("DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + str(new_vm.queue_info) + ".")
-                            # set hostname if possible
-                            if new_vm.queue_info != None:
-                                new_vm.hostname = str(new_vm.queue_info['hostname'])
-                            # get list of pools from DrQueue computer info
-                            new_vm.pool_name_list = DQCCqueue.concat_pool_names_of_computer(new_vm)
-                            # get owner from pool membership
-                            new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm)
-                            if new_vm.owner == None:
-                                print("DEBUG (3/4): Could not look up owner of VM " + instance.id + ".")
+                            print("DEBUG (1/4): VPN IP of VM " + instance.id + " is " + new_vm.vpn_ip + ".")
+                            # get DrQueue computer info from VPN IP
+                            new_vm.queue_info = DQCCqueue.get_slave_info(new_vm.vpn_ip)
+                            if new_vm.queue_info == None:
+                                print("DEBUG (2/4): Could not get queue info of VM " + instance.id + ".")
+                                # stop VM if stuck
+                                if check_max_wait(new_vm):
+                                    next
                             else:
-                                print("DEBUG (3/4): Owner of VM " + instance.id + " is " + new_vm.owner + ".")
-                        registered_vms.append(new_vm)
-                        print("DEBUG (4/4): Entry for VM " + instance.id + " is stored.")
-            else:
-                print("DEBUG: VM " + instance.id + " is not usable.")
+                                print("DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + str(new_vm.queue_info) + ".")
+                                # set hostname if possible
+                                if new_vm.queue_info != None:
+                                    new_vm.hostname = str(new_vm.queue_info['hostname'])
+                                # get list of pools from DrQueue computer info
+                                new_vm.pool_name_list = DQCCqueue.concat_pool_names_of_computer(new_vm)
+                                # get owner from pool membership
+                                new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm)
+                                if new_vm.owner == None:
+                                    print("DEBUG (3/4): Could not look up owner of VM " + instance.id + ".")
+                                else:
+                                    print("DEBUG (3/4): Owner of VM " + instance.id + " is " + new_vm.owner + ".")
+                            registered_vms.append(new_vm)
+                            print("DEBUG (4/4): Entry for VM " + instance.id + " is stored.")
+                else:
+                    print("DEBUG: VM " + instance.id + " is not usable.")
         return registered_vms
 
 

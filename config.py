@@ -1,8 +1,8 @@
 # global list of slave VMs
-slave_vms = None
+slave_vms = []
 
 # global list of connected slave
-slave_list = None
+slave_list = []
 
 # external ip address
 external_ip = None
