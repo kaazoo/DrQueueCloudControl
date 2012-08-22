@@ -100,6 +100,23 @@ while(True):
     DQCCconfig.slave_list = DQCCconfig.client.query_computer_list()
     DQCCconfig.slave_vms = DQCCcloud.get_slave_vms()
 
+    # debug known slave VMs
+    print(colored("\nINFO: List of known slave VMs:", 'yellow'))
+    for slave in DQCCconfig.slave_vms:
+        print("instance_id " + slave.instance_id)
+        print(" instance_type: " + str(slave.instance_type))
+        print(" owner: " + str(slave.owner))
+        print(" hostname: " + str(slave.hostname))
+        print(" public_dns: " + str(slave.public_dns))
+        print(" private_dns: " + str(slave.private_dns))
+        print(" private_ip: " + str(slave.private_ip))
+        print(" vpn_ip: " + str(slave.vpn_ip))
+        print(" queue_info: " + str(slave.queue_info))
+        print(" state: " + str(slave.state))
+        print(" parked_at: " + str(slave.parked_at))
+        print(" pool_name_list: " + str(slave.pool_name_list))
+        print(" launch_time: " + str(slave.launch_time))
+
     # cycle through all DQOR rendersessions
     rs_list = DQCCdb.fetch_rendersession_list()
     for rs in rs_list:
@@ -209,23 +226,6 @@ while(True):
             rs.save()
             # skip to next session
             continue
-
-    # debug known slave VMs
-    print(colored("\nINFO: List of known slave VMs:", 'yellow'))
-    for slave in DQCCconfig.slave_vms:
-        print("instance_id " + slave.instance_id)
-        print(" instance_type: " + str(slave.instance_type))
-        print(" owner: " + str(slave.owner))
-        print(" hostname: " + str(slave.hostname))
-        print(" public_dns: " + str(slave.public_dns))
-        print(" private_dns: " + str(slave.private_dns))
-        print(" private_ip: " + str(slave.private_ip))
-        print(" vpn_ip: " + str(slave.vpn_ip))
-        print(" queue_info: " + str(slave.queue_info))
-        print(" state: " + str(slave.state))
-        print(" parked_at: " + str(slave.parked_at))
-        print(" pool_name_list: " + str(slave.pool_name_list))
-        print(" launch_time: " + str(slave.launch_time))
 
     # save resources
     if DQCCconfig.stop_behaviour == "park":

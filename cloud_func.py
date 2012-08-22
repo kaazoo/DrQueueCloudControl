@@ -201,7 +201,7 @@ class DQCCcloud():
                             print("DEBUG (1/3): Could not look up VPN IP of VM " + instance.id + ".")
                             # stop VM if stuck
                             if DQCCcloud.check_max_wait(reg_vm):
-                                next
+                                continue
                         else:
                             print("DEBUG (1/3): VPN IP of VM " + instance.id + " is " + reg_vm.vpn_ip + ".")
                             # get DrQueue computer info from VPN IP
@@ -210,7 +210,7 @@ class DQCCcloud():
                                 print("DEBUG (2/3): Could not get queue info of VM " + instance.id + ".")
                                 # stop VM if stuck
                                 if DQCCcloud.check_max_wait(reg_vm):
-                                    next
+                                    continue
                             else:
                                 print("DEBUG (2/3): Queue info of VM " + instance.id + " is \n" + str(reg_vm.queue_info) + ".")
                                 # get list of pools from DrQueue computer info
@@ -231,7 +231,7 @@ class DQCCcloud():
                             print("DEBUG (1/4): Could not look up VPN IP of VM " + instance.id + ".")
                             # stop VM if stuck
                             if DQCCcloud.check_max_wait(new_vm):
-                                next
+                                continue
                         else:
                             print("DEBUG (1/4): VPN IP of VM " + instance.id + " is " + new_vm.vpn_ip + ".")
                             # get DrQueue computer info from VPN IP
@@ -240,7 +240,7 @@ class DQCCcloud():
                                 print("DEBUG (2/4): Could not get queue info of VM " + instance.id + ".")
                                 # stop VM if stuck
                                 if DQCCcloud.check_max_wait(new_vm):
-                                    next
+                                    continue
                             else:
                                 print("DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + str(new_vm.queue_info) + ".")
                                 # set hostname if possible
@@ -254,8 +254,8 @@ class DQCCcloud():
                                     print("DEBUG (3/4): Could not look up owner of VM " + instance.id + ".")
                                 else:
                                     print("DEBUG (3/4): Owner of VM " + instance.id + " is " + new_vm.owner + ".")
-                            registered_vms.append(new_vm)
-                            print("DEBUG (4/4): Entry for VM " + instance.id + " is stored.")
+                        registered_vms.append(new_vm)
+                        print("DEBUG (4/4): Entry for VM " + instance.id + " is stored.")
                 else:
                     print("DEBUG: VM " + instance.id + " is not usable.")
         return registered_vms
@@ -372,7 +372,7 @@ class DQCCcloud():
             device_name = "/dev/sd" + chr(drive_char)
             # check if device is existing
             if File.blockdev(device_name):
-                next
+                continue
             else:
                 found_free = true
                 break
