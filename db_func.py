@@ -1,3 +1,12 @@
+# text coloring
+from termcolor import colored
+
+# config shared accross all modules/classes
+import config as DQCCconfig
+
+# modules imports shared accross all modules/classes
+import global_imports as DQCCimport
+
 # for database connectivity
 from mongoengine import *
 
@@ -55,13 +64,6 @@ class Rendersession(Document):
 
 
 class DQCCdb():
-
-    # text coloring
-    global colored
-    from termcolor import colored
-
-    # config shared accross all modules/classes
-    import config as DQCCconfig
 
     # debug config
     print(colored("\nDB configuration:", 'yellow', attrs=['reverse']))

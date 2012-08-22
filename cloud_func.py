@@ -20,16 +20,17 @@ import dateutil.parser
 # for process handling
 import subprocess
 
+# config shared accross all modules/classes
+import config as DQCCconfig
+
+# modules imports shared accross all modules/classes
+import global_imports as DQCCimport
+
 
 class DQCCcloud():
 
     # for EC2 control
     import boto.ec2
-
-    # config shared accross all modules/classes
-    global DQCCconfig
-    import config as DQCCconfig
-
 
     # debug config
     print(colored("\nCloud configuration:", 'yellow', attrs=['reverse']))
@@ -205,7 +206,7 @@ class DQCCcloud():
                         else:
                             print("DEBUG (1/3): VPN IP of VM " + instance.id + " is " + reg_vm.vpn_ip + ".")
                             # get DrQueue computer info from VPN IP
-                            reg_vm.queue_info = DQCCqueue.get_slave_info(reg_vm.vpn_ip)
+                            reg_vm.queue_info = DQCCimport.DQCCqueue.get_slave_info(reg_vm.vpn_ip)
                             if reg_vm.queue_info == None:
                                 print("DEBUG (2/3): Could not get queue info of VM " + instance.id + ".")
                                 # stop VM if stuck
@@ -214,7 +215,7 @@ class DQCCcloud():
                             else:
                                 print("DEBUG (2/3): Queue info of VM " + instance.id + " is \n" + str(reg_vm.queue_info) + ".")
                                 # get list of pools from DrQueue computer info
-                                reg_vm.pool_name_list = DQCCqueue.concat_pool_names_of_computer(reg_vm)
+                                reg_vm.pool_name_list = DQCCimport.DQCCqueue.concat_pool_names_of_computer(reg_vm)
                         print("DEBUG (3/3): Entry for VM " + instance.id + " is updated.")
                     else:
                         # create new entry because VM was running before DQCC daemon (possibly crashed)
@@ -235,7 +236,7 @@ class DQCCcloud():
                         else:
                             print("DEBUG (1/4): VPN IP of VM " + instance.id + " is " + new_vm.vpn_ip + ".")
                             # get DrQueue computer info from VPN IP
-                            new_vm.queue_info = DQCCqueue.get_slave_info(new_vm.vpn_ip)
+                            new_vm.queue_info = DQCCimport.DQCCqueue.get_slave_info(new_vm.vpn_ip)
                             if new_vm.queue_info == None:
                                 print("DEBUG (2/4): Could not get queue info of VM " + instance.id + ".")
                                 # stop VM if stuck
@@ -247,9 +248,9 @@ class DQCCcloud():
                                 if new_vm.queue_info != None:
                                     new_vm.hostname = str(new_vm.queue_info['hostname'])
                                 # get list of pools from DrQueue computer info
-                                new_vm.pool_name_list = DQCCqueue.concat_pool_names_of_computer(new_vm)
+                                new_vm.pool_name_list = DQCCimport.DQCCqueue.concat_pool_names_of_computer(new_vm)
                                 # get owner from pool membership
-                                new_vm.owner = DQCCqueue.get_owner_from_pools(new_vm)
+                                new_vm.owner = DQCCconfig.DQCCimport.get_owner_from_pools(new_vm)
                                 if new_vm.owner == None:
                                     print("DEBUG (3/4): Could not look up owner of VM " + instance.id + ".")
                                 else:

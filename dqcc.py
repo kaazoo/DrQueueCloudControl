@@ -76,14 +76,8 @@ print("ec2_access_key_id = " + DQCCconfig.ec2_access_key_id)
 print("ec2_secret_access_key = " + DQCCconfig.ec2_secret_access_key)
 
 
-# database functionality
-from db_func import DQCCdb
-
-# DrQueue functionality
-from queue_func import DQCCqueue
-
-# cloud functionality
-from cloud_func import DQCCcloud
+# modules imports shared accross all modules/classes
+import global_imports as DQCCimport
 
 
 # sleep a while
@@ -98,7 +92,7 @@ print(colored("\n\nRunning main loop.\n", 'yellow', attrs=['reverse']))
 while(True):
     # fetch running slaves, registered in DrQueue and EC2
     DQCCconfig.slave_list = DQCCconfig.client.query_computer_list()
-    DQCCconfig.slave_vms = DQCCcloud.get_slave_vms()
+    DQCCconfig.slave_vms = DQCCimport.DQCCcloud.get_slave_vms()
 
     # debug known slave VMs
     print(colored("\nINFO: List of known slave VMs:", 'yellow'))
@@ -118,13 +112,13 @@ while(True):
         print(" launch_time: " + str(slave.launch_time))
 
     # cycle through all DQOR rendersessions
-    rs_list = DQCCdb.fetch_rendersession_list()
+    rs_list = DQCCimport.DQCCdb.fetch_rendersession_list()
     for rs in rs_list:
 
         print(colored("\nINFO: Working on rendersession " + str(rs.id) + ".", 'yellow'))
 
         # fetch list of all belonging jobs
-        job_list = DQCCdb.fetch_rendersession_job_list(rs)
+        job_list = DQCCimport.DQCCdb.fetch_rendersession_job_list(rs)
 
         # skip this rendersession if not used
         if len(job_list) == 0:
@@ -136,12 +130,12 @@ while(True):
 
         # fetch info for each job and check status
         for job in job_list:
-            job_info = DQCCqueue.fetch_job_info(job.id)
+            job_info = DQCCimport.DQCCqueue.fetch_job_info(job.id)
             if job_info == None:
                 print(colored("ERROR: Queue info for job " + str(job.id) + " could not be fetched.", 'red'))
             else:
                 # see if there is any job active or waiting
-                if DQCCqueue.job_status(job.id) == "pending":
+                if DQCCimport.DQCCqueue.job_status(job.id) == "pending":
                     running_jobs.append(job)
 
         print(colored("INFO: User id is " + rs.user, 'yellow'))
@@ -151,7 +145,7 @@ while(True):
         if len(running_jobs) == 0:
             print(colored("INFO: There are no running jobs in rendersession " + str(rs.id) + ". Removing all slaves if any.", 'yellow'))
             # remove all slaves of this rendersession
-            DQCCqueue.remove_slaves(rs.user, rs.vm_type, rs.num_slaves)
+            DQCCimport.DQCCqueue.remove_slaves(rs.user, rs.vm_type, rs.num_slaves)
             # update time counter
             if rs.stop_timestamp == 0:
                 rs.overall_time_passed += rs.time_passed
@@ -169,21 +163,21 @@ while(True):
         if time_left > 0:
             print(colored("INFO: There are " + str(time_left) + " sec left in session " + str(rs.id) + ".", 'yellow'))
             # check if slaves are running
-            running_slaves = len(DQCCqueue.get_running_user_slaves(rs.vm_type, rs.user))
+            running_slaves = len(DQCCimport.DQCCqueue.get_running_user_slaves(rs.vm_type, rs.user))
             print(colored("INFO: There are " + str(running_slaves) + " slaves already running.", 'yellow'))
             diff = rs.num_slaves - running_slaves
             max_diff = DQCCconfig.max_vms - len(DQCCconfig.slave_vms)
             if diff > max_diff:
                 print(colored("ERROR: Requested number of slaves exceeds maximum number of VMs. Will only add " + str(max_diff) + " slaves.", 'red'))
-                DQCCqueue.add_slaves(rs.user, rs.vm_type, max_diff)
+                DQCCimport.DQCCqueue.add_slaves(rs.user, rs.vm_type, max_diff)
             elif diff > 0:
                 print(colored("INFO: I have to add " + str(diff) + " more slaves to session " + str(rs.id) + ".", 'yellow'))
                 # add slaves
-                DQCCqueue.add_slaves(rs.user, rs.vm_type, diff)
+                DQCCimport.DQCCqueue.add_slaves(rs.user, rs.vm_type, diff)
             elif diff < 0:
                 print(colored("INFO: I have to remove " + str(diff.abs) + " slaves from session " + str(rs.id) + ".", 'yellow'))
                 # remove slaves because there are more then defined
-                DQCCqueue.remove_slaves(rs.user, rs.vm_type, diff.abs)
+                DQCCimport.DQCCqueue.remove_slaves(rs.user, rs.vm_type, diff.abs)
             else:
                 print(colored("INFO: I don't have to do anything for this job.", 'yellow'))
 
@@ -214,7 +208,7 @@ while(True):
         else:
             print(colored("INFO: No time left. I have to remove all slaves from rendersession " + str(rs.id) + ".", 'yellow'))
             # remove all slaves
-            DQCCqueue.remove_slaves(rs.user, rs.vm_type, rs.num_slaves)
+            DQCCimport.DQCCqueue.remove_slaves(rs.user, rs.vm_type, rs.num_slaves)
             # update time counter
             if rs.stop_timestamp == 0:
                 rs.overall_time_passed += rs.time_passed
@@ -229,7 +223,7 @@ while(True):
 
     # save resources
     if DQCCconfig.stop_behaviour == "park":
-        DQCCqueue.shutdown_old_slaves()
+        DQCCimport.DQCCqueue.shutdown_old_slaves()
 
     # make sure the main loop doesn't run too fast
     tea_break()

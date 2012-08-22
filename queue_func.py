@@ -1,20 +1,17 @@
+# config shared accross all modules/classes
+import config as DQCCconfig
+
+# modules imports shared accross all modules/classes
+import global_imports as DQCCimport
+
+# text coloring
+from termcolor import colored
+
+# SlaveVM class definition
+from slave_vm import SlaveVM
+
+
 class DQCCqueue():
-
-    # config shared accross all modules/classes
-    global DQCCconfig
-    import config as DQCCconfig
-
-    # cloud functionality
-    global DQCCcloud
-    from cloud_func import DQCCcloud
-
-    # text coloring
-    global colored
-    from termcolor import colored
-
-    # SlaveVM class definition
-    from slave_vm import SlaveVM
-
 
     # return DrQueue job information of a job
     @staticmethod
@@ -197,7 +194,7 @@ class DQCCqueue():
         if remaining > 0:
             for i in range(0, remaining):
                 # start up new slave VM
-                slave = DQCCcloud.start_vm(user_id, vm_type, DQCCqueue.concat_pool_names_of_user(user_id))
+                slave = DQCCimport.DQCCcloud.start_vm(user_id, vm_type, DQCCqueue.concat_pool_names_of_user(user_id))
                 if slave == None:
                     print(colored("ERROR: Failed to start VM.", 'red'))
 
