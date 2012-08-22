@@ -162,8 +162,8 @@ class DQCCcloud():
     def datestring_to_timestamp(datestring):
         date_parsed_local = dateutil.parser.parse(datestring)
         date_parsed_utc = date_parsed_local.astimezone(dateutil.tz.tzutc())
-        timestamp = time.mktime(date_parsed_utc.timetuple())
-        return instance_launch_timestamp
+        timestamp = int(time.mktime(date_parsed_utc.timetuple()))
+        return timestamp
 
 
     # fetch list of running slave VMs
@@ -186,7 +186,7 @@ class DQCCcloud():
                     instance_launch_timestamp = DQCCcloud.datestring_to_timestamp(instance.launch_time)
                     print("DEBUG: Instance " + instance.id + " was started " + str( int(time.time() - instance_launch_timestamp) ) + " seconds ago.")
                     # update info about registered VMs if they are known
-                    reg_vm = search_registered_vm_by_instance_id(instance.id)
+                    reg_vm = DQCCcloud.search_registered_vm_by_instance_id(instance.id)
                     if reg_vm != None:
                         # update existing entry
                         print("INFO: VM " + instance.id + " is known. Updating entry.")
@@ -196,11 +196,11 @@ class DQCCcloud():
                         reg_vm.state = instance.state
                         reg_vm.launch_time = instance_launch_timestamp
                         # get VPN IP from private IP
-                        reg_vm.vpn_ip = lookup_vpn_ip(instance.private_ip_address)
+                        reg_vm.vpn_ip = DQCCcloud.lookup_vpn_ip(instance.private_ip_address)
                         if reg_vm.vpn_ip == None:
                             print("DEBUG (1/3): Could not look up VPN IP of VM " + instance.id + ".")
                             # stop VM if stuck
-                            if check_max_wait(reg_vm):
+                            if DQCCcloud.check_max_wait(reg_vm):
                                 next
                         else:
                             print("DEBUG (1/3): VPN IP of VM " + instance.id + " is " + reg_vm.vpn_ip + ".")
@@ -209,7 +209,7 @@ class DQCCcloud():
                             if reg_vm.queue_info == None:
                                 print("DEBUG (2/3): Could not get queue info of VM " + instance.id + ".")
                                 # stop VM if stuck
-                                if check_max_wait(reg_vm):
+                                if DQCCcloud.check_max_wait(reg_vm):
                                     next
                             else:
                                 print("DEBUG (2/3): Queue info of VM " + instance.id + " is \n" + str(reg_vm.queue_info) + ".")
@@ -219,18 +219,18 @@ class DQCCcloud():
                     else:
                         # create new entry because VM was running before DQCC daemon (possibly crashed)
                         print("INFO: VM " + instance.id + " is not known. Creating new entry.")
-                        new_vm = SlaveVM.new(instance.id, instance.instance_type, None)
+                        new_vm = SlaveVM(instance.id, instance.instance_type, None)
                         new_vm.public_dns = instance.public_dns_name
                         new_vm.private_dns = instance.private_dns_name
                         new_vm.private_ip = instance.private_ip_address
                         new_vm.state = instance.state
                         new_vm.launch_time = instance_launch_timestamp
                         # get VPN IP from private IP
-                        new_vm.vpn_ip = lookup_vpn_ip(instance.private_ip_address)
+                        new_vm.vpn_ip = DQCCcloud.lookup_vpn_ip(instance.private_ip_address)
                         if new_vm.vpn_ip == None:
                             print("DEBUG (1/4): Could not look up VPN IP of VM " + instance.id + ".")
                             # stop VM if stuck
-                            if check_max_wait(new_vm):
+                            if DQCCcloud.check_max_wait(new_vm):
                                 next
                         else:
                             print("DEBUG (1/4): VPN IP of VM " + instance.id + " is " + new_vm.vpn_ip + ".")
@@ -239,7 +239,7 @@ class DQCCcloud():
                             if new_vm.queue_info == None:
                                 print("DEBUG (2/4): Could not get queue info of VM " + instance.id + ".")
                                 # stop VM if stuck
-                                if check_max_wait(new_vm):
+                                if DQCCcloud.check_max_wait(new_vm):
                                     next
                             else:
                                 print("DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + str(new_vm.queue_info) + ".")
@@ -324,12 +324,17 @@ class DQCCcloud():
             return None
 
         # log entry can be missing if VPN client is not yet connected
-        entry = None
-        # `grep #{private_ip} /etc/openvpn/openvpn-status.log`.split("\n")[1]
-        if entry == None:
-            return None
+        mylines = []
+        for line in open("/etc/openvpn/openvpn-status.log").readlines():
+            if private_ip in line:
+                print(colored("DEBUG: private_ip " + private_ip + " found here:\n" + line, 'green'))
+                mylines.append(line)
+        if len(mylines) > 0:
+            # extract vpn_ip from second output line
+            vpn_ip = mylines[1].split(",")[0]
+        else:
+            vpn_ip = None
 
-        vpn_ip = entry.split(",")[0]
         return vpn_ip
 
 
