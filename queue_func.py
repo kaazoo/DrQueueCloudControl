@@ -115,7 +115,7 @@ class DQCCqueue():
 
         slave_info = None
 
-        for computer in slave_list:
+        for computer in DQCCconfig.slave_list:
             comp = DQCCconfig.client.identify_computer(computer, DQCCconfig.cache_time)
             if (comp != None) and (str(comp['address']) == address):
                 slave_info = comp

@@ -67,8 +67,8 @@ class DQCCdb():
 
     # debug config
     print(colored("\nDB configuration:", 'yellow', attrs=['reverse']))
-    print("db_dqor_host = " + DQCCconfig.db_dqor_host)
-    print("db_dqor_name = " + DQCCconfig.db_dqor_name)
+    print("db_dqor_host = " + str(DQCCconfig.db_dqor_host))
+    print("db_dqor_name = " + str(DQCCconfig.db_dqor_name))
 
     # connect to DB
     try:

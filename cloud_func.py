@@ -128,10 +128,9 @@ class DQCCcloud():
         print(colored("DEBUG: DQCCcloud.check_max_wait(" + slave.instance_id + ")", 'green'))
     
         # check how long this VM is running
-        #instance_launch_time = datetime.datetime.fromtimestamp(slave.launch_time)
         if ( int(time.time() - slave.launch_time) ) > DQCCconfig.max_wait:
             print("DEBUG: slave instance " + str(slave.instance_id) + " seems to be stuck for more than " + str(DQCCconfig.max_wait) + " seconds. Stopping VM.")
-            stop_vm(slave)
+            DQCCcloud.stop_vm(slave)
             return True
         else:
             return False
