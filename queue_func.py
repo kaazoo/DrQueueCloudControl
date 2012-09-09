@@ -10,6 +10,7 @@ from termcolor import colored
 # SlaveVM class definition
 from slave_vm import SlaveVM
 
+import time
 
 class DQCCqueue():
 
@@ -230,7 +231,7 @@ class DQCCqueue():
                     # check age of VM
                     age_in_seconds = int(time.time() - vm.launch_time)
                     print(colored("INFO: Instance " + vm.instance_id + " was started " + str(age_in_seconds) + " seconds ago.", 'yellow'))
-                    seconds_to_next_hour = 3600 - age_in_seconds.remainder(3600)
+                    seconds_to_next_hour = 3600 - age_in_seconds % 3600
                     if seconds_to_next_hour <= 300:
                         print(colored("INFO: There are " + str(seconds_to_next_hour) + " seconds until the next full hour. Will stop instance " + vm.instance_id + " now.", 'yellow'))
                         # stop slave VM
