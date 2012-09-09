@@ -17,7 +17,7 @@ park_time = 600
 max_vms = 20
 
 # available render pool types
-pool_types = ['blender']
+pool_types = blender
 
 # time range for caching slave data
 cache_time = 60
