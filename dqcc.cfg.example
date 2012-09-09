@@ -26,7 +26,7 @@ cache_time = 60
 testmode = True
 
 # maximum time to wait for unknown slave VMs
-max_wait = 600
+max_wait = 2700
 
 # encryption salt for EBS volumes
 ebs_encryption_salt = 14758f1afd44c09b7992073ccf00b43d
