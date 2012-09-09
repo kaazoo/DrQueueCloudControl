@@ -81,7 +81,7 @@ class DQCCqueue():
 
         for vm in DQCCconfig.slave_vms:
             # slave has to be in any pool which doesn't contain parking pool name and but belongs to user
-            if (vm.pool_name_list != None) and (vm.pool_name_list.find(owner + "_" + DQCCconfig.parking_pool) == False) and (vm.instance_type == vm_type) and (vm.owner == owner):
+            if (vm.pool_name_list != None) and (str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)) and (vm.instance_type == vm_type) and (vm.owner == owner):
                 running_list.append(vm)
 
         print(colored("INFO: Found " + str(len(running_list)) + " running slaves.", 'yellow'))

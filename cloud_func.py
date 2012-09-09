@@ -242,14 +242,14 @@ class DQCCcloud():
                                 if DQCCcloud.check_max_wait(new_vm):
                                     continue
                             else:
-                                print("DEBUG (2/4): Queue info of VM " + instance.instanceId + " is \n" + str(new_vm.queue_info) + ".")
+                                print("DEBUG (2/4): Queue info of VM " + instance.id + " is \n" + str(new_vm.queue_info) + ".")
                                 # set hostname if possible
                                 if new_vm.queue_info != None:
                                     new_vm.hostname = str(new_vm.queue_info['hostname'])
                                 # get list of pools from DrQueue computer info
                                 new_vm.pool_name_list = DQCCimport.DQCCqueue.concat_pool_names_of_computer(new_vm)
                                 # get owner from pool membership
-                                new_vm.owner = DQCCconfig.DQCCimport.get_owner_from_pools(new_vm)
+                                new_vm.owner = DQCCimport.DQCCqueue.get_owner_from_pools(new_vm)
                                 if new_vm.owner == None:
                                     print("DEBUG (3/4): Could not look up owner of VM " + instance.id + ".")
                                 else:
@@ -258,6 +258,11 @@ class DQCCcloud():
                         print("DEBUG (4/4): Entry for VM " + instance.id + " is stored.")
                 else:
                     print("DEBUG: VM " + instance.id + " is not usable.")
+                    # delete VM from slave list if included
+                    for slave in DQCCconfig.slave_vms:
+                        if slave.instance_id == instance.id:
+                            DQCCconfig.slave_vms.remove(slave)
+                            print("DEBUG: Removed VM " + instance.id + " from list of known slave VMs.")
         return registered_vms
 
 
