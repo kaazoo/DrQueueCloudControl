@@ -22,6 +22,9 @@ pool_types = blender
 # time range for caching slave data
 cache_time = 60
 
+# timeout for identifying slave VMs
+identify_timeout = 5
+
 # do not perform any real actions on cloud
 testmode = True
 

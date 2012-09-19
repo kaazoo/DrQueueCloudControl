@@ -14,6 +14,16 @@ import time
 
 class DQCCqueue():
 
+    # debug config
+    print(colored("\nQueue configuration:", 'yellow', attrs=['reverse']))
+    print("pool_types = " + str(DQCCconfig.pool_types))
+    print("parking_pool = " + str(DQCCconfig.parking_pool))
+    print("park_time = " + str(DQCCconfig.park_time))
+    print("cache_time = " + str(DQCCconfig.cache_time))
+    print("identify_timeout = " + DQCCconfig.identify_timeout)
+    print("stop_behaviour = " + DQCCconfig.stop_behaviour)
+
+
     # return DrQueue job information of a job
     @staticmethod
     def fetch_job_info(job_id):
@@ -117,7 +127,7 @@ class DQCCqueue():
         slave_info = None
 
         for computer in DQCCconfig.slave_list:
-            comp = DQCCconfig.client.identify_computer(computer, DQCCconfig.cache_time)
+            comp = DQCCconfig.client.identify_computer(computer, DQCCconfig.cache_time, DQCCconfig.identify_timeout)
             if (comp != None) and (str(comp['address']) == address):
                 slave_info = comp
                 break
