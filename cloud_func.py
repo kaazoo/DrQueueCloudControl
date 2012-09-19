@@ -215,6 +215,16 @@ class DQCCcloud():
                                 print("DEBUG (2/3): Queue info of VM " + instance.id + " is \n" + str(reg_vm.queue_info) + ".")
                                 # get list of pools from DrQueue computer info
                                 reg_vm.pool_name_list = DQCCimport.DQCCqueue.concat_pool_names_of_computer(reg_vm)
+                                # set hostname if missing
+                                if reg_vm.hostname == None:
+                                    reg_vm.hostname = str(reg_vm.queue_info['hostname'])
+                                # set owner if missing
+                                if reg_vm.owner == None:
+                                    reg_vm.owner = DQCCimport.DQCCqueue.get_owner_from_pools(reg_vm)
+                                    if reg_vm.owner == None:
+                                        print("DEBUG (2/3): Could not look up owner of VM " + instance.id + ".")
+                                    else:
+                                        print("DEBUG (2/3): Owner of VM " + instance.id + " is " + reg_vm.owner + ".")
                         print("DEBUG (3/3): Entry for VM " + instance.id + " is updated.")
                     else:
                         # create new entry because VM was running before DQCC daemon (possibly crashed)
