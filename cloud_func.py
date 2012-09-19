@@ -88,7 +88,7 @@ class DQCCcloud():
             if DQCCconfig.testmode == True:
                 print(colored("INFO: Testmode - I would run 'ec2.run_instances(...)' now.", "yellow"))
             else:
-                instance_data = ec2.run_instances(DQCCconfig.ec2_slave_ami, key_name = DQCCconfig.ec2_key_name, instance_type = DQCCconfig.ec2_instance_type, security_groups=[DQCCconfig.ec2_sec_group], min_count = 1, max_count = 1, user_data = user_data, placement = DQCCconfig.ec2_avail_zone)
+                instance_data = ec2.run_instances(DQCCconfig.ec2_slave_ami, key_name = DQCCconfig.ec2_key_name, instance_type = vm_type, security_groups=[DQCCconfig.ec2_sec_group], min_count = 1, max_count = 1, user_data = user_data, placement = DQCCconfig.ec2_avail_zone)
         except "AWS::InstanceLimitExceeded":
             print(colored("ERROR: Maximum number of VMs reached.", 'red'))
             return None
