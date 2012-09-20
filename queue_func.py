@@ -107,7 +107,7 @@ class DQCCqueue():
         # walk through list and look for user_id in pool names
         parked_list = []
 
-        for vm in slave_vms:
+        for vm in DQCCconfig.slave_vms:
             # slave has to be in pseudo pool which contains user_id and parking pool name
             if (vm.pool_name_list != None) and (str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)) and (vm.instance_type == vm_type) and (vm.owner == owner):
                 parked_list.append(vm)
@@ -235,7 +235,7 @@ class DQCCqueue():
                     # stop slave VM
                     DQCCimport.DQCCcloud.stop_vm(vm)
                     # remove from global list
-                    slave_vms.delete(vm)
+                    DQCCconfig.slave_vms.delete(vm)
                 # shutdown slaves only 5 minutes before next full hour
                 elif DQCCconfig.stop_behaviour == "shutdown_with_delay":
                     # check age of VM
@@ -247,7 +247,7 @@ class DQCCqueue():
                         # stop slave VM
                         DQCCimport.DQCCcloud.stop_vm(vm)
                         # remove from global list
-                        slave_vms.delete(vm)
+                        DQCCconfig.slave_vms.delete(vm)
                     else:
                         print(colored("INFO: There are " + str(seconds_to_next_hour) + " seconds until the next full hour. Will stop instance " + vm.instance_id + " later.", 'yellow'))
                 else:
@@ -269,7 +269,7 @@ class DQCCqueue():
                 # stop slave VM
                 DQCCimport.DQCCcloud.stop_vm(slave)
                 # remove from global list
-                slave_vms.delete(slave)
+                DQCCconfig.slave_vms.delete(slave)
             else:
                 # search for old entries
                 if (int(time.time()) - DQCCconfig.park_time) > slave.parked_at:
@@ -277,7 +277,7 @@ class DQCCqueue():
                     # stop slave VM
                     DQCCimport.DQCCcloud.stop_vm(slave)
                     # remove from global list
-                    slave_vms.delete(slave)
+                    DQCCconfig.slave_vms.delete(slave)
                 else:
                     print(colored("INFO: Slave "+slave.instance_id+" has been parked at " + str(datetime.datetime.fromtimestamp(slave.parked_at)) + ".", 'yellow'))
 
