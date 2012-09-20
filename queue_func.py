@@ -235,7 +235,7 @@ class DQCCqueue():
                     # stop slave VM
                     DQCCimport.DQCCcloud.stop_vm(vm)
                     # remove from global list
-                    DQCCconfig.slave_vms.delete(vm)
+                    DQCCconfig.slave_vms.remove(vm)
                 # shutdown slaves only 5 minutes before next full hour
                 elif DQCCconfig.stop_behaviour == "shutdown_with_delay":
                     # check age of VM
@@ -247,7 +247,7 @@ class DQCCqueue():
                         # stop slave VM
                         DQCCimport.DQCCcloud.stop_vm(vm)
                         # remove from global list
-                        DQCCconfig.slave_vms.delete(vm)
+                        DQCCconfig.slave_vms.remove(vm)
                     else:
                         print(colored("INFO: There are " + str(seconds_to_next_hour) + " seconds until the next full hour. Will stop instance " + vm.instance_id + " later.", 'yellow'))
                 else:
@@ -269,7 +269,7 @@ class DQCCqueue():
                 # stop slave VM
                 DQCCimport.DQCCcloud.stop_vm(slave)
                 # remove from global list
-                DQCCconfig.slave_vms.delete(slave)
+                DQCCconfig.slave_vms.remove(slave)
             else:
                 # search for old entries
                 if (int(time.time()) - DQCCconfig.park_time) > slave.parked_at:
@@ -277,7 +277,7 @@ class DQCCqueue():
                     # stop slave VM
                     DQCCimport.DQCCcloud.stop_vm(slave)
                     # remove from global list
-                    DQCCconfig.slave_vms.delete(slave)
+                    DQCCconfig.slave_vms.remove(slave)
                 else:
                     print(colored("INFO: Slave "+slave.instance_id+" has been parked at " + str(datetime.datetime.fromtimestamp(slave.parked_at)) + ".", 'yellow'))
 
