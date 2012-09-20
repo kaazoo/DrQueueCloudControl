@@ -20,7 +20,7 @@ class DQCCqueue():
     print("parking_pool = " + str(DQCCconfig.parking_pool))
     print("park_time = " + str(DQCCconfig.park_time))
     print("cache_time = " + str(DQCCconfig.cache_time))
-    print("identify_timeout = " + DQCCconfig.identify_timeout)
+    print("identify_timeout = " + str(DQCCconfig.identify_timeout))
     print("stop_behaviour = " + DQCCconfig.stop_behaviour)
 
 
@@ -233,7 +233,7 @@ class DQCCqueue():
                 # shutdown slaves immediately
                 elif DQCCconfig.stop_behaviour == "shutdown":
                     # stop slave VM
-                    cloud_func.stop_vm(vm)
+                    DQCCimport.DQCCcloud.stop_vm(vm)
                     # remove from global list
                     slave_vms.delete(vm)
                 # shutdown slaves only 5 minutes before next full hour
@@ -245,7 +245,7 @@ class DQCCqueue():
                     if seconds_to_next_hour <= 300:
                         print(colored("INFO: There are " + str(seconds_to_next_hour) + " seconds until the next full hour. Will stop instance " + vm.instance_id + " now.", 'yellow'))
                         # stop slave VM
-                        cloud_func.stop_vm(vm)
+                        DQCCimport.DQCCcloud.stop_vm(vm)
                         # remove from global list
                         slave_vms.delete(vm)
                     else:
@@ -267,7 +267,7 @@ class DQCCqueue():
             if slave.parked_at == None:
                 print(colored("ERROR: Slave "+slave.instance_id+" has been parked but when isn't known. Shutting down now.", 'red'))
                 # stop slave VM
-                cloud_func.stop_vm(slave)
+                DQCCimport.DQCCcloud.stop_vm(slave)
                 # remove from global list
                 slave_vms.delete(slave)
             else:
@@ -275,7 +275,7 @@ class DQCCqueue():
                 if (int(time.time()) - DQCCconfig.park_time) > slave.parked_at:
                     print(colored("INFO: Slave "+slave.instance_id+" has been parked at " + str(datetime.datetime.fromtimestamp(slave.parked_at)) + " and will be shut down now.", 'yellow'))
                     # stop slave VM
-                    cloud_func.stop_vm(slave)
+                    DQCCimport.DQCCcloud.stop_vm(slave)
                     # remove from global list
                     slave_vms.delete(slave)
                 else:
