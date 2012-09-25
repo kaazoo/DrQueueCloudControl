@@ -1,0 +1,83 @@
+module DQCCconfig
+
+  # for ip lookup
+  require 'socket'
+
+
+  # find out local ip address
+  def self.local_ip
+    orig, Socket.do_not_reverse_lookup = Socket.do_not_reverse_lookup, true  # turn off reverse DNS resolution temporarily
+
+    UDPSocket.open do |s|
+      s.connect '64.233.187.99', 1
+      s.addr.last
+    end
+  ensure
+    Socket.do_not_reverse_lookup = orig
+  end
+
+
+  # sleep time for daemon
+  attr :sleep_interval
+  @sleep_interval = 10
+
+  # park engines for a given time or shut them down (immediately or with delay)
+  # values: "shutdown", "shutdown_with_delay", "park"
+  attr :stop_behaviour
+  @stop_behaviour = "shutdown"
+
+  # parking pool for waiting slaves
+  attr :parking_pool
+  @parking_pool = "garage"
+
+  # maximum parking time
+  attr :park_time
+  @park_time = 600
+
+  # maximum number of VMs
+  attr :max_vms
+  @max_vms = 20
+
+  # available render pool types
+  attr :pool_types
+  @pool_types = ['blender', 'maya', 'cinema4d']
+
+  # time range for caching slave data
+  attr :cache_time
+  @cache_time = 60
+
+  # do not perform any real actions on cloud
+  attr :testmode
+  @testmode = true
+
+  # maximum time to wait for unknown slave VMs
+  attr :max_wait
+  @max_wait = 600
+
+  # encryption salt for EBS volumes
+  attr :ebs_encryption_salt
+  @ebs_encryption_salt = "31c6772642cb2dce5a34f0a702f9470dd"
+
+  # DQOR database config
+  attr :db_dqor_name
+  @db_dqor_name = "ipythondb"
+  attr :db_dqor_host
+  @db_dqor_host = "localhost"
+
+  # DrQueue environment
+  ENV['DRQUEUE_MASTER'] ||= '127.0.0.1'
+  ENV['DRQUEUE_ROOT'] ||= '/usr/local/drqueue'
+  ENV['DRQUEUE_MASTER_FOR_VMS'] ||= '10.11.12.1'
+
+  # EC2 environment
+  ENV['AMAZON_ACCESS_KEY_ID'] ||= 'YOUR_ACCESS_KEY_ID'
+  ENV['AMAZON_SECRET_ACCESS_KEY'] ||= 'YOUR_SECRET_ACCESS_KEY_ID'
+  ENV['EC2_URL'] ||= 'https://eu-west-1.ec2.amazonaws.com'
+  ENV['EC2_SLAVE_AMI'] ||= 'ami-9999999999'
+  ENV['EC2_KEY_NAME'] ||= 'mykey'
+  ENV['EC2_INSTANCE_TYPE'] ||= 't1.micro'
+  ENV['EC2_AVAIL_ZONE'] ||= 'eu-west-1a'
+  ENV['EC2_SEC_GROUP'] ||= 'mysecgroup'
+
+
+end
