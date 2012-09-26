@@ -69,7 +69,7 @@ class Computer(Document):
         "collection": "drqueue_computers",
         "allow_inheritance": False,
     }
-    engine_id = StringField()
+    engine_id = IntField()
     created_at = IntField()
     hostname = StringField()
     arch = StringField()
@@ -124,6 +124,6 @@ class DQCCdb():
     @staticmethod
     def query_computer_by_address(comp_address):
         print(colored("DEBUG: DQCCdb.query_computer_by_address()", 'green'))
-        computer = Computer.objects(address=comp_address)
+        computer = Computer.objects(address=comp_address)[0]
         print(colored("INFO: Computer found: " + str(computer.engine_id), 'yellow'))
         return computer
