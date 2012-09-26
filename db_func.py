@@ -123,7 +123,7 @@ class DQCCdb():
     # search for computer by address
     @staticmethod
     def query_computer_by_address(comp_address):
-        print(colored("DEBUG: DQCCdb.query_computer_by_address()", 'green'))
+        print(colored("DEBUG: DQCCdb.query_computer_by_address(" + str(comp_address) + ")", 'green'))
         computer = Computer.objects(address=comp_address)[0]
         print(colored("INFO: Computer found: " + str(computer.engine_id), 'yellow'))
         return computer
