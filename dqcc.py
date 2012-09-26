@@ -177,9 +177,9 @@ while(True):
                 # add slaves
                 DQCCimport.DQCCqueue.add_slaves(rs.user, rs.vm_type, diff)
             elif diff < 0:
-                print(colored("INFO: I have to remove " + str(diff.abs) + " slaves from session " + str(rs.id) + ".", 'yellow'))
+                print(colored("INFO: I have to remove " + str(abs(diff)) + " slaves from session " + str(rs.id) + ".", 'yellow'))
                 # remove slaves because there are more then defined
-                DQCCimport.DQCCqueue.remove_slaves(rs.user, rs.vm_type, diff.abs)
+                DQCCimport.DQCCqueue.remove_slaves(rs.user, rs.vm_type, abs(diff))
             else:
                 print(colored("INFO: I don't have to do anything for this job.", 'yellow'))
 
