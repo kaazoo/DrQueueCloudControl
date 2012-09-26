@@ -128,26 +128,27 @@ class DQCCqueue():
         now = int(time.time())
 
         # search in database for address
-        computer = DQCCimport.DQCCdb.query_computer_by_address(address)
+        computer = DQCCimport.DQCCdb.query_computer_by_address(address)._data
 
         # if found in database, check cache_time
         if computer != None:
             # check existence and age of info
             # if not too old, use database contents
-            if (computer != None) and (now <= computer.created_at + DQCCconfig.cache_time):
-                print("DEBUG: Computer %i was found in DB and info is up-to-date." % computer.engine_id)
+            if now <= (computer["created_at"] + DQCCconfig.cache_time):
+                print("DEBUG: Computer %i was found in DB and info is up-to-date." % computer["engine_id"])
                 slave_info = computer
-            # if too old, call DQCCconfig.client.identify_computer()
+            # if too old, call DQCCconfig.client.identify_computer() with known engine_id
             else:
-                print("DEBUG: Computer %i was found in DB but info needs update." % computer.engine_id)
-                computer = DQCCconfig.client.identify_computer(computer.engine_id, DQCCconfig.cache_time, DQCCconfig.identify_timeout)
+                print("DEBUG: Computer %i was found in DB but info needs update." % computer["engine_id"])
+                computer = DQCCconfig.client.identify_computer(computer["engine_id"], DQCCconfig.cache_time, DQCCconfig.identify_timeout)
                 slave_info = computer
-        # if not found in database, call DQCCconfig.client.identify_computer()
-        for computer in DQCCconfig.slave_list:
-            comp = DQCCconfig.client.identify_computer(computer, DQCCconfig.cache_time, DQCCconfig.identify_timeout)
-            if (comp != None) and (str(comp['address']) == address):
-                slave_info = comp
-                break
+        # if not found in database, call DQCCconfig.client.identify_computer() for all possible engine_ids
+        else:
+            for slave in DQCCconfig.slave_list:
+                computer = DQCCconfig.client.identify_computer(slave, DQCCconfig.cache_time, DQCCconfig.identify_timeout)
+                if (computer != None) and (str(computer['address']) == address):
+                    slave_info = computer
+                    break
         return slave_info
 
 
