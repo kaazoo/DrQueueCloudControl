@@ -124,6 +124,12 @@ class DQCCdb():
     @staticmethod
     def query_computer_by_address(comp_address):
         print(colored("DEBUG: DQCCdb.query_computer_by_address(" + str(comp_address) + ")", 'green'))
-        computer = Computer.objects(address=comp_address)[0]
-        print(colored("INFO: Computer found: engine_id " + str(computer.engine_id), 'yellow'))
+        try:
+            # get data of first element as dict
+            computer = Computer.objects(address=comp_address)[0]._data
+            print(colored("INFO: Computer found: engine_id " + str(computer["engine_id"]), 'yellow'))
+        # first element of list is not accessible when nothing was found
+        except IndexError:
+            print(colored("INFO: Computer not found", 'yellow'))
+            computer = None
         return computer

@@ -128,7 +128,7 @@ class DQCCqueue():
         now = int(time.time())
 
         # search in database for address
-        computer = DQCCimport.DQCCdb.query_computer_by_address(address)._data
+        computer = DQCCimport.DQCCdb.query_computer_by_address(address)
 
         # if found in database, check cache_time
         if computer != None:
