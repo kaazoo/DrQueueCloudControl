@@ -36,20 +36,35 @@ class DQCCcloud():
     print(colored("\nCloud configuration:", 'yellow', attrs=['reverse']))
     print("testmode = " + str(DQCCconfig.testmode))
     print("max_wait = " + str(DQCCconfig.max_wait))
+    print("ec2_type = " + str(DQCCconfig.ec2_type))
     print("ebs_encryption_salt = " + DQCCconfig.ebs_encryption_salt)
     print("ec2_slave_ami = " + DQCCconfig.ec2_slave_ami)
     print("ec2_key_name = " + DQCCconfig.ec2_key_name)
     print("ec2_instance_type = " + DQCCconfig.ec2_instance_type)
     print("ec2_region = " + DQCCconfig.ec2_region)
+    print("ec2_region_endpoint = " + DQCCconfig.ec2_region_endpoint)
+    print("ec2_region_is_secure = " + str(DQCCconfig.ec2_region_is_secure))
+    print("ec2_region_port = " + str(DQCCconfig.ec2_region_port))
+    print("ec2_region_path = " + DQCCconfig.ec2_region_path)
     print("ec2_avail_zone = " + DQCCconfig.ec2_avail_zone)
     print("ec2_sec_group = " + DQCCconfig.ec2_sec_group)
     print("ec2_access_key_id = " + DQCCconfig.ec2_access_key_id)
     print("ec2_secret_access_key = " + DQCCconfig.ec2_secret_access_key)
+    print("ec2_vpn_logfile = " + DQCCconfig.ec2_vpn_logfile)
 
     # connect to EC2
     global ec2
     try:
-        ec2 = boto.ec2.connect_to_region(DQCCconfig.ec2_region, aws_access_key_id=DQCCconfig.ec2_access_key_id, aws_secret_access_key=DQCCconfig.ec2_secret_access_key)
+        # Amazon EC2 has predefined regions
+        if DQCCconfig.ec2_type == "amazon":
+            ec2 = boto.ec2.connect_to_region(DQCCconfig.ec2_region, aws_access_key_id=DQCCconfig.ec2_access_key_id, aws_secret_access_key=DQCCconfig.ec2_secret_access_key)
+        # define our own region for OpenStack EC2
+        elif DQCCconfig.ec2_type == "openstack":
+            region = boto.ec2.regioninfo.RegionInfo(name=DQCCconfig.ec2_region, endpoint=DQCCconfig.ec2_region_endpoint)
+            ec2 = boto.connect_ec2(aws_access_key_id=DQCCconfig.ec2_access_key_id, aws_secret_access_key=DQCCconfig.ec2_secret_access_key, is_secure=DQCCconfig.ec2_region_is_secure, region=region, port=DQCCconfig.ec2_region_port, path=DQCCconfig.ec2_region_path)
+        else:
+            print(colored("\nERROR: set correct ec2_type", 'red'))
+            exit(1)
     except socket.gaierror:
         print(colored("\nERROR: Could not connect to EC2 service. Check your network connection.", 'red'))
         exit(1)
@@ -99,6 +114,9 @@ class DQCCcloud():
             slave = SlaveVM(random_id, DQCCconfig.ec2_instance_type, user_id)
         else:
             created_instance = instance_data.instances[0]
+            # tag VM with user_id and pool_list
+            created_instance.add_tag("pool_list", pool_list)
+            created_instance.add_tag("user_id", user_id)
             slave = SlaveVM(created_instance.id, created_instance.instance_type, user_id)
         slave.hostname = hostname
         slave.pool_name_list = pool_list
@@ -340,7 +358,7 @@ class DQCCcloud():
 
         # log entry can be missing if VPN client is not yet connected
         mylines = []
-        for line in open("/etc/openvpn/openvpn-status.log").readlines():
+        for line in open(DQCCconfig.ec2_vpn_logfile).readlines():
             if private_ip in line:
                 print(colored("DEBUG: private_ip " + private_ip + " found here:\n" + line, 'green'))
                 mylines.append(line)
