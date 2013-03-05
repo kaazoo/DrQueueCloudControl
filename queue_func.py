@@ -54,10 +54,13 @@ class DQCCqueue():
         parked_list = []
 
         for vm in DQCCconfig.slave_vms:
-            if (vm.queue_info != None):
+            if vm.queue_info != None:
                 for pool in vm.pool_name_list:
                     if pool.find(DQCCconfig.parking_pool):
                         parked_list.append(vm)
+
+        ## query all instances in parking pool by help of tags
+        #parked_list = DQCCimport.DQCCcloud.get_slave_vms(pool=DQCCconfig.parking_pool):
 
         print(colored("INFO: Found " + str(len(parked_list)) + " parked slaves.", 'yellow'))
         return parked_list
@@ -75,8 +78,16 @@ class DQCCqueue():
             # newly created VMs can be pending (booting VM)
             # OR
             # running but without queue_info (rendering job right after start OR not having DrQueue slave process started yet)
-            if ( (vm.state == "pending") and (vm.instance_type == vm_type) ) or ( (vm.state == "running") and (vm.instance_type == vm_type) and (vm.queue_info == None) ):
+            if ( (vm.state == "pending") or ((vm.state == "running") and (vm.queue_info == None)) ) and (vm.instance_type == vm_type) and (vm.owner == owner)):
                 starting_list.append(vm)
+
+        ## query all instances of user by help of tags
+        #for vm in DQCCimport.DQCCcloud.get_slave_vms(owner=owner, instance_type=vm_type):
+        #    # newly created VMs can be pending (booting VM)
+        #    # OR
+        #    # running but without queue_info (rendering job right after start OR not having DrQueue slave process started yet)
+        #    if (vm.state == "pending") or ( (vm.state == "running") and (vm.queue_info == None) ):
+        #        starting_list.append(vm)
 
         print(colored("INFO: Found " + str(len(starting_list)) + " starting slaves.", 'yellow'))
         return starting_list
@@ -92,8 +103,13 @@ class DQCCqueue():
 
         for vm in DQCCconfig.slave_vms:
             # slave has to be in any pool which doesn't contain parking pool name and but belongs to user
-            if (vm.pool_name_list != None) and (str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)) and (vm.instance_type == vm_type) and (vm.owner == owner):
+            if (vm.pool_name_list != None) and !(str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)) and (vm.instance_type == vm_type) and (vm.owner == owner):
                 running_list.append(vm)
+        ## query all instances of owner and vm_type
+        #for vm in DQCCconfig.DQCCcloud.get_slave_vms(owner=owner, instance_type=vm_type):
+        #    # slave has to be in pseudo pool which contains user_id and parking pool name
+        #    if (vm.pool_name_list != None) and !(str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)):
+        #        parked_list.append(vm)
 
         print(colored("INFO: Found " + str(len(running_list)) + " running slaves.", 'yellow'))
         return running_list
@@ -109,8 +125,14 @@ class DQCCqueue():
 
         for vm in DQCCconfig.slave_vms:
             # slave has to be in pseudo pool which contains user_id and parking pool name
+            # slave has to match vm_type and owner
             if (vm.pool_name_list != None) and (str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)) and (vm.instance_type == vm_type) and (vm.owner == owner):
                 parked_list.append(vm)
+        ## query all instances of owner and vm_type
+        #for vm in DQCCconfig.DQCCcloud.get_slave_vms(owner=owner, instance_type=vm_type):
+        #    # slave has to be in pseudo pool which contains user_id and parking pool name
+        #    if (vm.pool_name_list != None) and (str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)):
+        #        parked_list.append(vm)
 
         print(colored("INFO: Found " + str(len(parked_list)) + " parked slaves.", 'yellow'))
         return parked_list
@@ -134,6 +156,9 @@ class DQCCqueue():
         if computer != None:
             # check existence and age of info
             # if not too old, use database contents
+            print("cache_time is " + str(DQCCconfig.cache_time))
+            print("now is " + str(now))
+            print("cache deadline is " + str(computer["created_at"] + DQCCconfig.cache_time) + " (" + str((computer["created_at"] + DQCCconfig.cache_time) - now) + " seconds left to next update)" )
             if now <= (computer["created_at"] + DQCCconfig.cache_time):
                 print("DEBUG: Computer %i was found in DB and info is up-to-date." % computer["engine_id"])
                 slave_info = computer

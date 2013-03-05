@@ -186,7 +186,7 @@ class DQCCcloud():
 
     # fetch list of running slave VMs
     @staticmethod
-    def get_slave_vms():
+    def get_slave_vms(owner=None, pool=None, state=None, instance_type=None):
         print(colored("DEBUG: DQCCcloud.get_slave_vms()", 'green'))
         
         # reuse old list if existing
@@ -195,11 +195,34 @@ class DQCCcloud():
         else:
           registered_vms = []
     
+        # build filters
+        filter_ami = {"image_id": DQCCconfig.ec2_slave_ami}
+        ## filtering with tags might be supported in OpenStack Havana
+        ## see https://blueprints.launchpad.net/nova/+spec/ec2-tags-api
+        ##filter_owner = {'tag:user_id': owner}
+        ##filter_pool = {'tag:pool_list': "*" + pool + "*"}
+        filter_state = {"state": state}
+        filter_instance_type = {"instance_type": instance_type}
+
+        # chain filters
+        filters = {}
+        filters.update(filter_ami)
+        ## filtering with tags might be supported in OpenStack Havana
+        ## see https://blueprints.launchpad.net/nova/+spec/ec2-tags-api
+        ##if owner != None:
+        ##    filters.update(filter_owner)
+        ##if pool != None:
+        ##    filters.update(filter_pool)
+        if state != None:
+            filters.update(filter_state)
+        if instance_type != None:
+            filters.update(filter_instance_type)
+
         # walk through all registered VMs
-        for reservation in ec2.get_all_instances(filters = {"image_id": DQCCconfig.ec2_slave_ami}):
+        for reservation in ec2.get_all_instances(filters=filters):
             for instance in reservation.instances:
-                # we are not interested in terminated/stopping and non-slave VMs
-                if (("running" in instance.state) or ("pending" in instance.state)) and (instance.image_id == DQCCconfig.ec2_slave_ami):
+                # we are not interested in terminated/stopping VMs
+                if ("running" in instance.state) or ("pending" in instance.state):
                     # check age of VMs
                     instance_launch_timestamp = DQCCcloud.datestring_to_timestamp(instance.launch_time)
                     print("DEBUG: Instance " + instance.id + " was started " + str( int(time.time() - instance_launch_timestamp) ) + " seconds ago.")

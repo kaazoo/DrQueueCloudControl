@@ -4,7 +4,7 @@
 DrQueueCloudControl
 supervise rendersessions and control slaves / cloud VMs
 
-Copyright (C) 2010-2012 Andreas Schroeder
+Copyright (C) 2010-2013 Andreas Schroeder
 
 This file is part of DrQueue.
 
