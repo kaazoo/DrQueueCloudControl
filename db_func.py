@@ -110,6 +110,38 @@ class DQCCdb():
         return sessions
 
 
+    # return list of all active rendersessions (associated with running jobs)
+    @staticmethod
+    def fetch_active_rendersession_list():
+        print(colored("DEBUG: DQCCdb.fetch_active_rendersession_list()", 'green'))
+        # fetch all paid, owned and active rendersessions
+        sessions = Rendersession.objects(paid_at__ne=None, paypal_payer_id__ne=None, active=True)
+        print(colored("INFO: Rendersessions found: " + str(len(sessions)), 'yellow'))
+        for rs in sessions:
+            # fetch list of all belonging jobs
+            all_jobs = DQCCdb.fetch_rendersession_job_list(rs)
+            active_jobs = DQCCdb.fetch_rendersession_active_job_list(rs)
+            # skip this rendersession if not used
+            if len(all_jobs) == 0:
+                print(colored("INFO: Rendersession " + str(rs.id) + " isn't in use yet (has no associated jobs). Skipping this one.", 'yellow'))
+                # skip to next session
+                continue
+            else:
+                # remove eventually running slaves of this session
+                if (len(active_jobs) == 0) and (len(all_jobs) > 0):
+                    # update time counter
+                    if rs.stop_timestamp == 0:
+                        rs.overall_time_passed += rs.time_passed
+                        rs.time_passed = 0
+                        rs.stop_timestamp = int(time.time())
+                        print(colored("INFO: Setting stop timestamp to: " + str(rs.stop_timestamp) + ".", 'yellow'))
+                        rs.save()
+                else:
+                    # skip to next session
+                    continue
+        return sessions
+
+
     # return list of jobs belonging to a rendersession
     @staticmethod
     def fetch_rendersession_job_list(rendersession):
@@ -118,6 +150,26 @@ class DQCCdb():
         jobs = Job.objects(owner=rendersession.user)
         print(colored("INFO: Jobs found: " + str(len(jobs)), 'yellow'))
         return jobs
+
+
+    # return list of active jobs belonging to a rendersession
+    @staticmethod
+    def fetch_rendersession_active_job_list(rendersession):
+        print(colored("DEBUG: DQCCdb.fetch_rendersession_active_job_list(" + str(rendersession) + ")", 'green'))
+        # search for all jobs of the rendersession's owner
+        jobs = Job.objects(owner=rendersession.user)
+        running_jobs = []
+        # fetch info for each job and check status
+        for job in jobs:
+            job_info = DQCCimport.DQCCqueue.fetch_job_info(job.id)
+            if job_info == None:
+                print(colored("ERROR: Queue info for job " + str(job.id) + " could not be fetched.", 'red'))
+            else:
+                # see if there is any job active or waiting
+                if DQCCimport.DQCCqueue.job_status(job.id) == "pending":
+                    running_jobs.append(job)
+            print(colored("INFO: There are " + str(len(running_jobs)) + " running jobs in rendersession " + str(rs.id) + ".", 'yellow'))
+        return running_jobs
 
 
     # search for computer by address

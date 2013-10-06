@@ -91,14 +91,29 @@ while(True):
     # DQCCimport.DQCCcloud.get_slave_vms(state='stopped')
     # DQCCconfig.slave_vms = DQCCimport.DQCCcloud.get_slave_vms()
 
+
+    ###
+    # general plan:
+
     # 1)
     # find all VMs and 'detouch' them
+
+    # 2)
+    # walk all active rendersessions and 'touch' required slave VMs
+
+    # 3)
+    # shut down all slave VMs which weren't 'touched' and are therefor unneeded
+
+    ###
+
+
     print(colored("\nINFO: List of known slave VMs:", 'yellow'))
     slave_vms = DQCCimport.DQCCcloud.get_slave_vms()
     for slave_vm in slave_vms:
         # 'detouch' each slave VM
         slave_vm.remove_tag('touched')
         print("instance_id " + slave_vm.id)
+        # show interesting information about all known VMs
         print(" instance_type: " + str(slave_vm.instance_type))
         if 'owner' in slave_vm.tags:
             print(" owner: " + str(slave_vm.tags['owner']))
@@ -134,61 +149,14 @@ while(True):
             print(colored(" pool_list: not set", 'red'))
         print(" launch_time: " + str(slave_vm.launch_time))
 
-    # 2)
-    # walk all rendersessions and 'touch' required slave VMs
-
-    # 3)
-    # shut down all slave VMs which weren't 'touched' and are therefor unneeded
-
-
-    ####
-
 
 
     # 2)
-    # walk all rendersessions and 'touch' required slave VMs
-    rs_list = DQCCimport.DQCCdb.fetch_rendersession_list()
+    # walk all active rendersessions and 'touch' required slave VMs
+    rs_list = DQCCimport.DQCCdb.fetch_active_rendersession_list()
     for rs in rs_list:
 
-        print(colored("\nINFO: Working on rendersession " + str(rs.id) + ".", 'yellow'))
-
-        # fetch list of all belonging jobs
-        job_list = DQCCimport.DQCCdb.fetch_rendersession_job_list(rs)
-
-        # skip this rendersession if not used
-        if len(job_list) == 0:
-            print(colored("INFO: Rendersession " + str(rs.id) + " isn't in use yet. Skipping this one.", 'yellow'))
-            # skip to next session
-            continue
-
-        running_jobs = []
-
-        # fetch info for each job and check status
-        for job in job_list:
-            job_info = DQCCimport.DQCCqueue.fetch_job_info(job.id)
-            if job_info == None:
-                print(colored("ERROR: Queue info for job " + str(job.id) + " could not be fetched.", 'red'))
-            else:
-                # see if there is any job active or waiting
-                if DQCCimport.DQCCqueue.job_status(job.id) == "pending":
-                    running_jobs.append(job)
-
         print(colored("INFO: User id is " + rs.user, 'yellow'))
-
-
-        # remove eventually running slaves of this session
-        if len(running_jobs) == 0:
-            # update time counter
-            if rs.stop_timestamp == 0:
-                rs.overall_time_passed += rs.time_passed
-                rs.time_passed = 0
-                rs.stop_timestamp = int(time.time())
-                print(colored("INFO: Setting stop timestamp to: " + str(rs.stop_timestamp) + ".", 'yellow'))
-                rs.save()
-            # skip to next session
-            continue
-        else:
-            print(colored("INFO: There are " + str(len(running_jobs)) + " running jobs in rendersession " + str(rs.id) + ".", 'yellow'))
 
         # look if there is time left (in seconds)
         time_left = rs.run_time * 3600 - (rs.overall_time_passed + rs.time_passed)
@@ -198,7 +166,8 @@ while(True):
             running_slaves = DQCCimport.DQCCqueue.get_running_user_slaves(rs.vm_type, rs.user)
             # 'touch' existing slave VMs
             for slave in running_slaves:
-                slave.create_tag('touched')
+                slave.create_tag('touched', '')
+                print(colored("INFO: VM " + slave.id + "was \'touched\'.", 'yellow'))
             num_running_slaves = len(running_slaves)
             print(colored("INFO: There are " + str(num_running_slaves) + " slaves already running.", 'yellow'))
             diff = rs.num_slaves - running_slaves
@@ -261,6 +230,8 @@ while(True):
             # skip to next session
             continue
 
+    # 3)
+    # shut down all slave VMs which weren't 'touched' and are therefor unneeded
     # save resources
     if DQCCconfig.stop_behaviour == "park":
         # shutdown all slave VMs which have been parked for too long
