@@ -1,6 +1,3 @@
-# global list of slave VMs
-slave_vms = []
-
 # global list of connected slave
 slave_list = []
 
@@ -54,4 +51,5 @@ ec2_avail_zone = None
 ec2_sec_group = None
 ec2_access_key_id = None
 ec2_secret_access_key = None
-
+ec2_vpn_enabled = None
+ec2_vpn_logfile = None

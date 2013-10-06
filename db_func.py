@@ -116,7 +116,7 @@ class DQCCdb():
         print(colored("DEBUG: DQCCdb.fetch_active_rendersession_list()", 'green'))
         # fetch all paid, owned and active rendersessions
         sessions = Rendersession.objects(paid_at__ne=None, paypal_payer_id__ne=None, active=True)
-        print(colored("INFO: Rendersessions found: " + str(len(sessions)), 'yellow'))
+        active_sessions = []
         for rs in sessions:
             # fetch list of all belonging jobs
             all_jobs = DQCCdb.fetch_rendersession_job_list(rs)
@@ -126,6 +126,8 @@ class DQCCdb():
                 print(colored("INFO: Rendersession " + str(rs.id) + " isn't in use yet (has no associated jobs). Skipping this one.", 'yellow'))
                 # skip to next session
                 continue
+            elif len(active_jobs) > 0:
+                active_sessions.append(rs)
             else:
                 # remove eventually running slaves of this session
                 if (len(active_jobs) == 0) and (len(all_jobs) > 0):
@@ -139,7 +141,8 @@ class DQCCdb():
                 else:
                     # skip to next session
                     continue
-        return sessions
+        print(colored("INFO: Active rendersessions found: " + str(len(active_sessions)), 'yellow'))
+        return active_sessions
 
 
     # return list of jobs belonging to a rendersession
@@ -148,7 +151,6 @@ class DQCCdb():
         print(colored("DEBUG: DQCCdb.fetch_rendersession_job_list(" + str(rendersession) + ")", 'green'))
         # search for all jobs of the rendersession's owner
         jobs = Job.objects(owner=rendersession.user)
-        print(colored("INFO: Jobs found: " + str(len(jobs)), 'yellow'))
         return jobs
 
 
@@ -168,7 +170,6 @@ class DQCCdb():
                 # see if there is any job active or waiting
                 if DQCCimport.DQCCqueue.job_status(job.id) == "pending":
                     running_jobs.append(job)
-            print(colored("INFO: There are " + str(len(running_jobs)) + " running jobs in rendersession " + str(rs.id) + ".", 'yellow'))
         return running_jobs
 
 

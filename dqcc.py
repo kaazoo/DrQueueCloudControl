@@ -79,8 +79,8 @@ def tea_break():
     print(colored("\nSleeping for " + str(DQCCconfig.sleep_interval) + " seconds.\n", 'yellow', attrs=['reverse']))
     time.sleep(DQCCconfig.sleep_interval)
 
-
-print(colored("\n\nRunning main loop.\n", 'yellow', attrs=['reverse']))
+print(colored("\n\nDrQueueCloudControl - version 0.2", 'green', attrs=['reverse']))
+print(colored("\n\nEntering main loop.\n", 'yellow', attrs=['reverse']))
 
 # main daemon loop
 while(True):
@@ -89,7 +89,6 @@ while(True):
     # DQCCimport.DQCCcloud.get_slave_vms(owner='foobar22')
     # DQCCimport.DQCCcloud.get_slave_vms(pool='superpool2')
     # DQCCimport.DQCCcloud.get_slave_vms(state='stopped')
-    # DQCCconfig.slave_vms = DQCCimport.DQCCcloud.get_slave_vms()
 
 
     ###
@@ -107,7 +106,7 @@ while(True):
     ###
 
 
-    print(colored("\nINFO: List of known slave VMs:", 'yellow'))
+    print(colored("\nStage 1: List of known slave VMs:", 'yellow', attrs=['reverse']))
     slave_vms = DQCCimport.DQCCcloud.get_slave_vms()
     for slave_vm in slave_vms:
         # 'detouch' each slave VM
@@ -153,9 +152,11 @@ while(True):
 
     # 2)
     # walk all active rendersessions and 'touch' required slave VMs
+    print(colored("\nStage 2: Working on active rendersessions.", 'yellow', attrs=['reverse']))
     rs_list = DQCCimport.DQCCdb.fetch_active_rendersession_list()
     for rs in rs_list:
 
+        print(colored("\nINFO: Working on rendersession " + str(rs.id), 'yellow'))
         print(colored("INFO: User id is " + rs.user, 'yellow'))
 
         # look if there is time left (in seconds)
@@ -171,7 +172,7 @@ while(True):
             num_running_slaves = len(running_slaves)
             print(colored("INFO: There are " + str(num_running_slaves) + " slaves already running.", 'yellow'))
             diff = rs.num_slaves - running_slaves
-            max_diff = DQCCconfig.max_vms - len(DQCCconfig.slave_vms)
+            max_diff = DQCCconfig.max_vms - len(slave_vms)
             if diff > max_diff:
                 print(colored("ERROR: Requested number of slaves exceeds maximum number of VMs. Will only add " + str(max_diff) + " slaves.", 'red'))
                 ### NOTE: every newly started VM is 'touched'
@@ -230,16 +231,17 @@ while(True):
             # skip to next session
             continue
 
-    # 3)
-    # shut down all slave VMs which weren't 'touched' and are therefor unneeded
-    # save resources
+
+    print(colored("\nStage 3: Trying to save ressources.", 'yellow', attrs=['reverse']))
     if DQCCconfig.stop_behaviour == "park":
         # shutdown all slave VMs which have been parked for too long
         DQCCimport.DQCCqueue.shutdown_old_parked_slaves()
     if (DQCCconfig.stop_behaviour == "shutdown") or (DQCCconfig.stop_behaviour == "shutdown_with_delay"):
-        # shutdown all slave VMs which haven't been 'touched'
-        for vm in DQCCconfig.slave_vms:
+        # 3)
+        # shut down all slave VMs which weren't 'touched' and are therefor unneeded
+        for vm in slave_vms:
             if not 'touched' in vm.tags:
+                print(colored("INFO: VM " + vm.id + " is not tagged as \'touched\'.", 'yellow'))
                 DQCCimport.DQCCcloud.stop_vm(vm)
 
     # make sure the main loop doesn't run too fast
