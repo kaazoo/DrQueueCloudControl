@@ -106,7 +106,6 @@ class DQCCcloud():
                 created_instance = instance_data.instances[0]
                 ## adding tags will be supported in OpenStack Havana
                 ## see https://blueprints.launchpad.net/nova/+spec/ec2-tags-api
-                ## tag VM with user_id and pool_list
                 # store additional data as tags:
                 created_instance.add_tag('pool_list', pool_list)
                 created_instance.add_tag('owner', user_id)
@@ -117,7 +116,6 @@ class DQCCcloud():
                 created_instance.add_tag('parked_at', '')
                 launch_timestamp = DQCCcloud.datestring_to_timestamp(created_instance.launch_time)
                 created_instance.add_tag('touched', '')
-                #slave = SlaveVM(created_instance.id, created_instance.instance_type, user_id)
 
                 # all possible instance information provided by boto:
                 # ami_launch_index # This instances position within it's launch group.
@@ -159,8 +157,6 @@ class DQCCcloud():
                 # virtualization_type # The type of virtualization used.
                 # vpc_id # The VPC ID, if running in VPC.
 
-                # append slave VM to list of known VMs
-                #DQCCconfig.slave_vms.append(slave)
         except "AWS::InstanceLimitExceeded":
             print(colored("ERROR: Maximum number of VMs reached.", 'red'))
             return None
