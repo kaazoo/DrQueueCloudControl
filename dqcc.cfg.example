@@ -52,5 +52,6 @@ ec2_avail_zone = eu-west-1a
 ec2_sec_group = mysecgroup
 ec2_access_key_id = FOO
 ec2_secret_access_key = BAR
+ec2_vpn_enabled = True
 ec2_vpn_logfile = /etc/openvpn/openvpn-status.log
 
