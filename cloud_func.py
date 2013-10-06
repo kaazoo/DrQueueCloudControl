@@ -235,7 +235,7 @@ class DQCCcloud():
         usable_slaves = []
 
         # build filters
-        filter_ami = {'image_id': DQCCconfig.ec2_slave_ami}
+        filter_ami = {'image-id': DQCCconfig.ec2_slave_ami}
         ## filtering with custom tags will be supported in OpenStack Havana
         ## see https://blueprints.launchpad.net/nova/+spec/ec2-tags-api
         filter_owner = {'tag:user_id': owner}
