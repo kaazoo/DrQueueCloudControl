@@ -7,9 +7,7 @@ import global_imports as DQCCimport
 # text coloring
 from termcolor import colored
 
-# SlaveVM class definition
-from slave_vm import SlaveVM
-
+# date & time calculations
 import time
 
 class DQCCqueue():
@@ -50,17 +48,8 @@ class DQCCqueue():
     def get_all_parked_slaves():
         print(colored("DEBUG: DQCCqueue.get_all_parked_slaves()", 'green'))
 
-        # walk through list and look for parking pool
-        parked_list = []
-
-        for vm in DQCCconfig.slave_vms:
-            if vm.queue_info != None:
-                for pool in vm.pool_name_list:
-                    if pool.find(DQCCconfig.parking_pool):
-                        parked_list.append(vm)
-
-        ## query all instances in parking pool by help of tags
-        #parked_list = DQCCimport.DQCCcloud.get_slave_vms(pool=DQCCconfig.parking_pool):
+        # query all instances in parking pool by help of tags
+        parked_list = DQCCimport.DQCCcloud.get_slave_vms(pool=DQCCconfig.parking_pool)
 
         print(colored("INFO: Found " + str(len(parked_list)) + " parked slaves.", 'yellow'))
         return parked_list
@@ -74,20 +63,13 @@ class DQCCqueue():
         # walk through list and look for recently started slaves
         starting_list = []
 
-        for vm in DQCCconfig.slave_vms:
+        # query all instances of user by help of tags
+        for vm in DQCCimport.DQCCcloud.get_slave_vms(owner=owner, instance_type=vm_type):
             # newly created VMs can be pending (booting VM)
             # OR
             # running but without queue_info (rendering job right after start OR not having DrQueue slave process started yet)
-            if ( (vm.state == "pending") or ((vm.state == "running") and (vm.queue_info == None)) ) and (vm.instance_type == vm_type) and (vm.owner == owner)):
+            if (vm.state == "pending") or ( (vm.state == "running") and (vm.tags['queue_info'] == None) ):
                 starting_list.append(vm)
-
-        ## query all instances of user by help of tags
-        #for vm in DQCCimport.DQCCcloud.get_slave_vms(owner=owner, instance_type=vm_type):
-        #    # newly created VMs can be pending (booting VM)
-        #    # OR
-        #    # running but without queue_info (rendering job right after start OR not having DrQueue slave process started yet)
-        #    if (vm.state == "pending") or ( (vm.state == "running") and (vm.queue_info == None) ):
-        #        starting_list.append(vm)
 
         print(colored("INFO: Found " + str(len(starting_list)) + " starting slaves.", 'yellow'))
         return starting_list
@@ -101,15 +83,11 @@ class DQCCqueue():
         # walk through list and look for user_id in pool names
         running_list = []
 
-        for vm in DQCCconfig.slave_vms:
-            # slave has to be in any pool which doesn't contain parking pool name and but belongs to user
-            if (vm.pool_name_list != None) and !(str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)) and (vm.instance_type == vm_type) and (vm.owner == owner):
-                running_list.append(vm)
-        ## query all instances of owner and vm_type
-        #for vm in DQCCconfig.DQCCcloud.get_slave_vms(owner=owner, instance_type=vm_type):
-        #    # slave has to be in pseudo pool which contains user_id and parking pool name
-        #    if (vm.pool_name_list != None) and !(str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)):
-        #        parked_list.append(vm)
+        # query all instances of owner and vm_type
+        for vm in DQCCconfig.DQCCcloud.get_slave_vms(owner=owner, instance_type=vm_type):
+            # slave has to be in pseudo pool which contains user_id and parking pool name
+            if ('pool_list' in vm.tags) and not(str(vm.tags['pool_list']).find(owner + "_" + DQCCconfig.parking_pool)):
+                parked_list.append(vm)
 
         print(colored("INFO: Found " + str(len(running_list)) + " running slaves.", 'yellow'))
         return running_list
@@ -123,16 +101,11 @@ class DQCCqueue():
         # walk through list and look for user_id in pool names
         parked_list = []
 
-        for vm in DQCCconfig.slave_vms:
+        # query all instances of owner and vm_type
+        for vm in DQCCconfig.DQCCcloud.get_slave_vms(owner=owner, instance_type=vm_type):
             # slave has to be in pseudo pool which contains user_id and parking pool name
-            # slave has to match vm_type and owner
-            if (vm.pool_name_list != None) and (str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)) and (vm.instance_type == vm_type) and (vm.owner == owner):
+            if ('pool_list' in vm.tags) and (str(vm.tags['pool_list']).find(owner + "_" + DQCCconfig.parking_pool)):
                 parked_list.append(vm)
-        ## query all instances of owner and vm_type
-        #for vm in DQCCconfig.DQCCcloud.get_slave_vms(owner=owner, instance_type=vm_type):
-        #    # slave has to be in pseudo pool which contains user_id and parking pool name
-        #    if (vm.pool_name_list != None) and (str(vm.pool_name_list).find(owner + "_" + DQCCconfig.parking_pool)):
-        #        parked_list.append(vm)
 
         print(colored("INFO: Found " + str(len(parked_list)) + " parked slaves.", 'yellow'))
         return parked_list
@@ -185,8 +158,8 @@ class DQCCqueue():
         if slave == None:
             return None
 
-        if str(slave.pool_name_list).find("_"):
-            pool = slave.pool_name_list[0]
+        if str(slave.tags['pool_list']).find("_"):
+            pool = slave.tags['pool_list'][0]
             user_id = pool.split("_")[0]
         else:
             user_id = None
@@ -196,17 +169,18 @@ class DQCCqueue():
     # modify pool membership
     @staticmethod
     def set_slave_pool(slave, pool):
-        print(colored("DEBUG: DQCCqueue.set_slave_pool(" + str(slave.hostname) + ", \"" + str(pool) + "\")", 'green'))
-        print(colored("INFO: adding " + str(slave.hostname) + " to pool " + str(pool), 'yellow'))
+        print(colored("DEBUG: DQCCqueue.set_slave_pool(" + str(slave.tags['hostname']) + ", \"" + str(pool) + "\")", 'green'))
+        print(colored("INFO: adding " + str(slave.tags['hostname']) + " to pool " + str(pool), 'yellow'))
 
         # update pool membership in DrQueue
-        DQCCconfig.client.computer_set_pools(slave.queue_info, pool.split(","))
-        # update SlaveVM object
-        slave.pool_name_list = pool
+        DQCCconfig.client.computer_set_pools(slave.tags['queue_info'], pool.split(","))
+        # update pool info
+        slave.tags['pool_list'] = pool
         return true
 
 
     # add a number of slaves which belong to a user and match a special type
+    ### add rendersession info here as well ???
     @staticmethod
     def add_slaves(user_id, vm_type, diff):
         print(colored("DEBUG: DQCCqueue.add_slaves(" + str(user_id) + ", " + str(vm_type) + ", " + str(diff) + ")", 'green'))
@@ -220,7 +194,7 @@ class DQCCqueue():
             print(colored("INFO: Found " + str(usable) + " usable starting slaves of type \"" + vm_type + "\".", 'yellow'))
             # work on a number of starting slaves
             for i in range(0, usable):
-                print(colored("INFO: Waiting for "+starting_slaves[i].instance_id+" to finish startup.", 'yellow'))
+                print(colored("INFO: Waiting for " + starting_slaves[i].id + " to finish startup.", 'yellow'))
             if remaining >= usable:
                 remaining -= usable
             print(colored("INFO: Remaining slaves that need to be started: " + str(remaining), 'yellow'))
@@ -231,14 +205,14 @@ class DQCCqueue():
             parked_slaves = get_parked_user_slaves(vm_type, user_id)
             if len(parked_slaves) > 0:
                 usable = min(len(parked_slaves), remaining)
-                print(colored("INFO: Found " + str(usable) + " parked slaves of type \""+vm_type+"\".", 'yellow'))
+                print(colored("INFO: Found " + str(usable) + " parked slaves of type \"" + vm_type + "\".", 'yellow'))
                 # work on a number of parked slaves
                 for i in range(0, usable):
                     # add to user pool(s)
-                    print(colored("INFO: I will add slave \"" + parked_slaves[i].hostname + "\" to pools \"" + DQCCqueue.concat_pool_names_of_user(user_id) + "\".", 'yellow'))
+                    print(colored("INFO: I will add slave \"" + parked_slaves[i].tags['hostname'] + "\" to pools \"" + DQCCqueue.concat_pool_names_of_user(user_id) + "\".", 'yellow'))
                     set_slave_pool(parked_slaves[i], DQCCqueue.concat_pool_names_of_user(user_id))
                     # update queue info
-                    parked_slaves[i].queue_info = get_slave_info(parked_slaves[i].vpn_ip)
+                    parked_slaves[i].tags['queue_info'] = get_slave_info(parked_slaves[i].tags['client_ip'])
                 if remaining >= usable:
                     remaining -= usable
             print(colored("INFO: Remaining slaves that need to be started: " + str(remaining), 'yellow'))
@@ -272,27 +246,29 @@ class DQCCqueue():
                         # add slaves to parking pool
                         set_slave_pool(vm, user_id + "_" + DQCCconfig.parking_pool)
                         # save parking time
-                        vm.parked_at = int(time.time())
+                        vm.add_tag('parked_at', str(int(time.time())))
                 # shutdown slaves immediately
                 elif DQCCconfig.stop_behaviour == "shutdown":
                     # stop slave VM
                     DQCCimport.DQCCcloud.stop_vm(vm)
+                    # remove 'touched' tag
+                    vm.remove_tag('touched')
                     # remove from global list
                     DQCCconfig.slave_vms.remove(vm)
                 # shutdown slaves only 5 minutes before next full hour
                 elif DQCCconfig.stop_behaviour == "shutdown_with_delay":
                     # check age of VM
                     age_in_seconds = int(time.time() - vm.launch_time)
-                    print(colored("INFO: Instance " + vm.instance_id + " was started " + str(age_in_seconds) + " seconds ago.", 'yellow'))
+                    print(colored("INFO: Instance " + vm.id + " was started " + str(age_in_seconds) + " seconds ago.", 'yellow'))
                     seconds_to_next_hour = 3600 - age_in_seconds % 3600
                     if seconds_to_next_hour <= 300:
-                        print(colored("INFO: There are " + str(seconds_to_next_hour) + " seconds until the next full hour. Will stop instance " + vm.instance_id + " now.", 'yellow'))
+                        print(colored("INFO: There are " + str(seconds_to_next_hour) + " seconds until the next full hour. Will stop instance " + vm.id + " now.", 'yellow'))
                         # stop slave VM
                         DQCCimport.DQCCcloud.stop_vm(vm)
                         # remove from global list
                         DQCCconfig.slave_vms.remove(vm)
                     else:
-                        print(colored("INFO: There are " + str(seconds_to_next_hour) + " seconds until the next full hour. Will stop instance " + vm.instance_id + " later.", 'yellow'))
+                        print(colored("INFO: There are " + str(seconds_to_next_hour) + " seconds until the next full hour. Will stop instance " + vm.id + " later.", 'yellow'))
                 else:
                   print(colored("ERROR: Your configuration is invalid. stop_behaviour has be either \"park\", \"shutdown\" or \"shutdown_with_delay\".", 'red'))
         # no user slaves found
@@ -302,13 +278,13 @@ class DQCCqueue():
 
     # shutdown slaves when their parking time is over
     @staticmethod
-    def shutdown_old_slaves():
-        print(colored("DEBUG: DQCCqueue.shutdown_old_slaves()", 'green'))
+    def shutdown_old_parked_slaves():
+        print(colored("DEBUG: DQCCqueue.shutdown_old_parked_slaves()", 'green'))
 
         parked_slaves = get_all_parked_slaves()
         for slave in parked_slaves:
-            if slave.parked_at == None:
-                print(colored("ERROR: Slave "+slave.instance_id+" has been parked but when isn't known. Shutting down now.", 'red'))
+            if 'parked_at' in slave.tags:
+                print(colored("ERROR: Slave " + slave.id + " has been parked but when isn't known. Shutting down now.", 'red'))
                 # stop slave VM
                 DQCCimport.DQCCcloud.stop_vm(slave)
                 # remove from global list
@@ -316,24 +292,24 @@ class DQCCqueue():
             else:
                 # search for old entries
                 if (int(time.time()) - DQCCconfig.park_time) > slave.parked_at:
-                    print(colored("INFO: Slave "+slave.instance_id+" has been parked at " + str(datetime.datetime.fromtimestamp(slave.parked_at)) + " and will be shut down now.", 'yellow'))
+                    print(colored("INFO: Slave " + slave.id + " has been parked at " + str(datetime.datetime.fromtimestamp(slave.tags['parked_at'])) + " and will be shut down now.", 'yellow'))
                     # stop slave VM
                     DQCCimport.DQCCcloud.stop_vm(slave)
                     # remove from global list
                     DQCCconfig.slave_vms.remove(slave)
                 else:
-                    print(colored("INFO: Slave "+slave.instance_id+" has been parked at " + str(datetime.datetime.fromtimestamp(slave.parked_at)) + ".", 'yellow'))
+                    print(colored("INFO: Slave " + slave.id + " has been parked at " + str(datetime.datetime.fromtimestamp(slave.tags['parked_at'])) + ".", 'yellow'))
 
 
     # concat poolnames a computer is belonging to
     @staticmethod
     def concat_pool_names_of_computer(slave):
-        print(colored("DEBUG: DQCCqueue.concat_pool_names_of_computer(" + str(slave.hostname) + ")", 'green'))
+        print(colored("DEBUG: DQCCqueue.concat_pool_names_of_computer(" + str(slave.tags['hostname']) + ")", 'green'))
 
         if slave == None:
           return []
 
-        return DQCCconfig.client.computer_get_pools(slave.queue_info)
+        return DQCCconfig.client.computer_get_pools(slave.tags['queue_info'])
 
 
     # concat all possible poolnames for a user

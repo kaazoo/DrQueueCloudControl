@@ -12,11 +12,13 @@ Licensed under GNU General Public License version 3. See LICENSE for details.
 """
 
 
+# date & time calculations
 import time
 
 # text coloring
 from termcolor import colored
 
+# DrQueue functionality
 import DrQueue
 from DrQueue import Job as DrQueueJob
 from DrQueue import Client as DrQueueClient
@@ -58,30 +60,14 @@ DQCCconfig.ec2_avail_zone = config.get("DQCCconfig", "ec2_avail_zone")
 DQCCconfig.ec2_sec_group = config.get("DQCCconfig", "ec2_sec_group")
 DQCCconfig.ec2_access_key_id = config.get("DQCCconfig", "ec2_access_key_id")
 DQCCconfig.ec2_secret_access_key = config.get("DQCCconfig", "ec2_secret_access_key")
+DQCCconfig.ec2_vpn_enabled = config.getboolean("DQCCconfig", "ec2_vpn_enabled")
 DQCCconfig.ec2_vpn_logfile = config.get("DQCCconfig", "ec2_vpn_logfile")
 
 # debug config file
 print(colored("\nMain configuration:", 'yellow', attrs=['reverse']))
 print("sleep_interval = " + str(DQCCconfig.sleep_interval))
 print("stop_behaviour = " + DQCCconfig.stop_behaviour)
-print("parking_pool = " + DQCCconfig.parking_pool)
-print("park_time = " + str(DQCCconfig.park_time))
-print("max_vms = " + str(DQCCconfig.max_vms))
-print("pool_types = " + str(DQCCconfig.pool_types))
-print("cache_time = " + str(DQCCconfig.cache_time))
-print("identify_timeout = " + str(DQCCconfig.identify_timeout))
 print("testmode = " + str(DQCCconfig.testmode))
-print("max_wait = " + str(DQCCconfig.max_wait))
-print("ebs_encryption_salt = " + DQCCconfig.ebs_encryption_salt)
-print("db_dqor_name = " + DQCCconfig.db_dqor_name)
-print("db_dqor_host = " + DQCCconfig.db_dqor_host)
-print("ec2_slave_ami = " + DQCCconfig.ec2_slave_ami)
-print("ec2_key_name = " + DQCCconfig.ec2_key_name)
-print("ec2_instance_type = " + DQCCconfig.ec2_instance_type)
-print("ec2_avail_zone = " + DQCCconfig.ec2_avail_zone)
-print("ec2_sec_group = " + DQCCconfig.ec2_sec_group)
-print("ec2_access_key_id = " + DQCCconfig.ec2_access_key_id)
-print("ec2_secret_access_key = " + DQCCconfig.ec2_secret_access_key)
 
 
 # modules imports shared accross all modules/classes
@@ -98,28 +84,69 @@ print(colored("\n\nRunning main loop.\n", 'yellow', attrs=['reverse']))
 
 # main daemon loop
 while(True):
-    # fetch running slaves, registered in DrQueue and EC2
+    # fetch running slaves registered in DrQueue
     DQCCconfig.slave_list = DQCCconfig.client.query_computer_list()
-    DQCCconfig.slave_vms = DQCCimport.DQCCcloud.get_slave_vms()
+    # DQCCimport.DQCCcloud.get_slave_vms(owner='foobar22')
+    # DQCCimport.DQCCcloud.get_slave_vms(pool='superpool2')
+    # DQCCimport.DQCCcloud.get_slave_vms(state='stopped')
+    # DQCCconfig.slave_vms = DQCCimport.DQCCcloud.get_slave_vms()
 
-    # debug known slave VMs
+    # 1)
+    # find all VMs and 'detouch' them
     print(colored("\nINFO: List of known slave VMs:", 'yellow'))
-    for slave in DQCCconfig.slave_vms:
-        print("instance_id " + slave.instance_id)
-        print(" instance_type: " + str(slave.instance_type))
-        print(" owner: " + str(slave.owner))
-        print(" hostname: " + str(slave.hostname))
-        print(" public_dns: " + str(slave.public_dns))
-        print(" private_dns: " + str(slave.private_dns))
-        print(" private_ip: " + str(slave.private_ip))
-        print(" vpn_ip: " + str(slave.vpn_ip))
-        print(" queue_info: " + str(slave.queue_info))
-        print(" state: " + str(slave.state))
-        print(" parked_at: " + str(slave.parked_at))
-        print(" pool_name_list: " + str(slave.pool_name_list))
-        print(" launch_time: " + str(slave.launch_time))
+    slave_vms = DQCCimport.DQCCcloud.get_slave_vms()
+    for slave_vm in slave_vms:
+        # 'detouch' each slave VM
+        slave_vm.remove_tag('touched')
+        print("instance_id " + slave_vm.id)
+        print(" instance_type: " + str(slave_vm.instance_type))
+        if 'owner' in slave_vm.tags:
+            print(" owner: " + str(slave_vm.tags['owner']))
+        else:
+            print(colored(" owner: not set", 'red'))
+        if 'hostname' in slave_vm.tags:
+            print(" hostname: " + str(slave_vm.tags['hostname']))
+        else:
+            print(colored(" hostname: not set", 'red'))
+        print(" public_dns: " + str(slave_vm.public_dns_name))
+        print(" private_dns: " + str(slave_vm.private_dns_name))
+        print(" private_ip: " + str(slave_vm.private_ip_address))
+        if 'vpn_ip' in slave_vm.tags:
+            print(" vpn_ip: " + str(slave_vm.tags['vpn_ip']))
+        else:
+            print(colored(" vpn_ip: not set", 'red'))
+        if 'client_ip' in slave_vm.tags:
+            print(" client_ip: " + str(slave_vm.tags['client_ip']))
+        else:
+            print(colored(" client_ip: not set", 'red'))
+        if 'queue_info' in slave_vm.tags:
+            print(" queue_info: " + str(slave_vm.tags['queue_info']))
+        else:
+            print(colored(" queue_info: not set", 'red'))
+        print(" state: " + str(slave_vm.state))
+        if 'parked_at' in slave_vm.tags:
+            print(" parked_at: " + str(slave_vm.tags['parked_at']))
+        else:
+            print(colored(" parked_at: not set", 'red'))
+        if 'pool_list' in slave_vm.tags:
+            print(" pool_list: " + str(slave_vm.tags['pool_list']))
+        else:
+            print(colored(" pool_list: not set", 'red'))
+        print(" launch_time: " + str(slave_vm.launch_time))
 
-    # cycle through all DQOR rendersessions
+    # 2)
+    # walk all rendersessions and 'touch' required slave VMs
+
+    # 3)
+    # shut down all slave VMs which weren't 'touched' and are therefor unneeded
+
+
+    ####
+
+
+
+    # 2)
+    # walk all rendersessions and 'touch' required slave VMs
     rs_list = DQCCimport.DQCCdb.fetch_rendersession_list()
     for rs in rs_list:
 
@@ -151,9 +178,6 @@ while(True):
 
         # remove eventually running slaves of this session
         if len(running_jobs) == 0:
-            print(colored("INFO: There are no running jobs in rendersession " + str(rs.id) + ". Removing all slaves if any.", 'yellow'))
-            # remove all slaves of this rendersession
-            DQCCimport.DQCCqueue.remove_slaves(rs.user, rs.vm_type, rs.num_slaves)
             # update time counter
             if rs.stop_timestamp == 0:
                 rs.overall_time_passed += rs.time_passed
@@ -171,19 +195,27 @@ while(True):
         if time_left > 0:
             print(colored("INFO: There are " + str(time_left) + " sec left in session " + str(rs.id) + ".", 'yellow'))
             # check if slaves are running
-            running_slaves = len(DQCCimport.DQCCqueue.get_running_user_slaves(rs.vm_type, rs.user))
-            print(colored("INFO: There are " + str(running_slaves) + " slaves already running.", 'yellow'))
+            running_slaves = DQCCimport.DQCCqueue.get_running_user_slaves(rs.vm_type, rs.user)
+            # 'touch' existing slave VMs
+            for slave in running_slaves:
+                slave.create_tag('touched')
+            num_running_slaves = len(running_slaves)
+            print(colored("INFO: There are " + str(num_running_slaves) + " slaves already running.", 'yellow'))
             diff = rs.num_slaves - running_slaves
             max_diff = DQCCconfig.max_vms - len(DQCCconfig.slave_vms)
             if diff > max_diff:
                 print(colored("ERROR: Requested number of slaves exceeds maximum number of VMs. Will only add " + str(max_diff) + " slaves.", 'red'))
+                ### NOTE: every newly started VM is 'touched'
+                # add a lower number of slaves
                 DQCCimport.DQCCqueue.add_slaves(rs.user, rs.vm_type, max_diff)
             elif diff > 0:
                 print(colored("INFO: I have to add " + str(diff) + " more slaves to session " + str(rs.id) + ".", 'yellow'))
+                ### NOTE: every newly started VM is 'touched'
                 # add slaves
                 DQCCimport.DQCCqueue.add_slaves(rs.user, rs.vm_type, diff)
             elif diff < 0:
                 print(colored("INFO: I have to remove " + str(abs(diff)) + " slaves from session " + str(rs.id) + ".", 'yellow'))
+                ### NOTE: every removed VM gets also 'detouched'
                 # remove slaves because there are more then defined
                 DQCCimport.DQCCqueue.remove_slaves(rs.user, rs.vm_type, abs(diff))
             else:
@@ -231,7 +263,13 @@ while(True):
 
     # save resources
     if DQCCconfig.stop_behaviour == "park":
-        DQCCimport.DQCCqueue.shutdown_old_slaves()
+        # shutdown all slave VMs which have been parked for too long
+        DQCCimport.DQCCqueue.shutdown_old_parked_slaves()
+    if (DQCCconfig.stop_behaviour == "shutdown") or (DQCCconfig.stop_behaviour == "shutdown_with_delay"):
+        # shutdown all slave VMs which haven't been 'touched'
+        for vm in DQCCconfig.slave_vms:
+            if not 'touched' in vm.tags:
+                DQCCimport.DQCCcloud.stop_vm(vm)
 
     # make sure the main loop doesn't run too fast
     tea_break()

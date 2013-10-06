@@ -9,9 +9,6 @@ from termcolor import colored
 # for TCP/IP sockets
 import socket
 
-# SlaveVM class definition
-from slave_vm import SlaveVM
-
 # date & time calculations
 import time
 import datetime
@@ -34,8 +31,8 @@ class DQCCcloud():
 
     # debug config
     print(colored("\nCloud configuration:", 'yellow', attrs=['reverse']))
-    print("testmode = " + str(DQCCconfig.testmode))
     print("max_wait = " + str(DQCCconfig.max_wait))
+    print("max_vms = " + str(DQCCconfig.max_vms))
     print("ec2_type = " + str(DQCCconfig.ec2_type))
     print("ebs_encryption_salt = " + DQCCconfig.ebs_encryption_salt)
     print("ec2_slave_ami = " + DQCCconfig.ec2_slave_ami)
@@ -50,6 +47,7 @@ class DQCCcloud():
     print("ec2_sec_group = " + DQCCconfig.ec2_sec_group)
     print("ec2_access_key_id = " + DQCCconfig.ec2_access_key_id)
     print("ec2_secret_access_key = " + DQCCconfig.ec2_secret_access_key)
+    print("ec2_vpn_enabled = " + str(DQCCconfig.ec2_vpn_enabled))
     print("ec2_vpn_logfile = " + DQCCconfig.ec2_vpn_logfile)
 
     # connect to EC2
@@ -102,52 +100,97 @@ class DQCCcloud():
             # start new instance
             if DQCCconfig.testmode == True:
                 print(colored("INFO: Testmode - I would run 'ec2.run_instances(...)' now.", "yellow"))
+                created_instance = None
             else:
                 instance_data = ec2.run_instances(DQCCconfig.ec2_slave_ami, key_name = DQCCconfig.ec2_key_name, instance_type = vm_type, security_groups=[DQCCconfig.ec2_sec_group], min_count = 1, max_count = 1, user_data = user_data, placement = DQCCconfig.ec2_avail_zone)
+                created_instance = instance_data.instances[0]
+                ## adding tags will be supported in OpenStack Havana
+                ## see https://blueprints.launchpad.net/nova/+spec/ec2-tags-api
+                ## tag VM with user_id and pool_list
+                # store additional data as tags:
+                created_instance.add_tag('pool_list', pool_list)
+                created_instance.add_tag('owner', user_id)
+                created_instance.add_tag('hostname', hostname)
+                created_instance.add_tag('vpn_ip', '')
+                created_instance.add_tag('client_ip', '')
+                created_instance.add_tag('queue_info', '')
+                created_instance.add_tag('parked_at', '')
+                launch_timestamp = DQCCcloud.datestring_to_timestamp(created_instance.launch_time)
+                created_instance.add_tag('touched', '')
+                #slave = SlaveVM(created_instance.id, created_instance.instance_type, user_id)
+
+                # all possible instance information provided by boto:
+                # ami_launch_index # This instances position within it's launch group.
+                # architecture # The architecture of the image (i386|x86_64).
+                # block_device_mapping # The Block Device Mapping for the instance.
+                # ebs_optimized # Whether instance is using optimized EBS volumes or not.
+                # groups # A list of Group objects representing the security groups associated with the instance.
+                # groups # List of security Groups associated with the instance.
+                # hypervisor # The hypervisor used.
+                # id # The unique ID of the Instance.
+                # image_id # The ID of the AMI used to launch this instance.
+                # instance_profile # A Python dict containing the instance profile id and arn associated with this instance.
+                # instance_type # The type of instance (e.g. m1.small).
+                # interfaces # List of Elastic Network Interfaces associated with this instance.
+                # ip_address # The public IP address of the instance.
+                # kernel # The kernel associated with the instance.
+                # key_name # The name of the SSH key associated with the instance.
+                # launch_time # The time the instance was launched.
+                # monitored # A boolean indicating whether monitoring is enabled or not.
+                # monitoring_state # A string value that contains the actual value of the monitoring element returned by EC2.
+                # placement # The availability zone in which the instance is running.
+                # placement_group # The name of the placement group the instance is in (for cluster compute instances).
+                # placement_tenancy # The tenancy of the instance, if the instance is running within a VPC. An instance with a tenancy of dedicated runs on a single-tenant hardware.
+                # platform # Platform of the instance (e.g. Windows)
+                # previous_state # The string representation of the instance's previous state.
+                # previous_state_code # An integer representation of the instance's current state.
+                # private_dns_name # The private dns name of the instance.
+                # private_ip_address # The private IP address of the instance.
+                # product_codes # A list of product codes associated with this instance.
+                # public_dns_name # The public dns name of the instance.
+                # ramdisk # The ramdisk associated with the instance.
+                # root_device_name # The name of the root device.
+                # root_device_type # The root device type (ebs|instance-store).
+                # spot_instance_request_id # The ID of the spot instance request if this is a spot instance.
+                # state # The string representation of the instance's current state.
+                # state_code # An integer representation of the instance's current state.
+                # state_reason # The reason for the most recent state transition.
+                # subnet_id # The VPC Subnet ID, if running in VPC.
+                # virtualization_type # The type of virtualization used.
+                # vpc_id # The VPC ID, if running in VPC.
+
+                # append slave VM to list of known VMs
+                #DQCCconfig.slave_vms.append(slave)
         except "AWS::InstanceLimitExceeded":
             print(colored("ERROR: Maximum number of VMs reached.", 'red'))
             return None
-    
-        # keep VM info
-        if DQCCconfig.testmode == True:
-            random_id = os.urandom(4).encode('hex')
-            slave = SlaveVM(random_id, DQCCconfig.ec2_instance_type, user_id)
-        else:
-            created_instance = instance_data.instances[0]
-            # tag VM with user_id and pool_list
-            created_instance.add_tag("pool_list", pool_list)
-            created_instance.add_tag("user_id", user_id)
-            slave = SlaveVM(created_instance.id, created_instance.instance_type, user_id)
-        slave.hostname = hostname
-        slave.pool_name_list = pool_list
-    
-        # append slave VM to list of known VMs
-        DQCCconfig.slave_vms.append(slave)
-    
-        return slave
+
+        return created_instance
 
 
     # terminate a running slave VM
     @staticmethod
     def stop_vm(slave):
-        print(colored("DEBUG: DQCCcloud.stop_vm(" + slave.instance_id + ")", 'green'))
+        print(colored("DEBUG: DQCCcloud.stop_vm(" + slave.id + ")", 'green'))
 
         # stop running instance
         if DQCCconfig.testmode == True:
             print(colored("INFO: Testmode - I would run 'ec2.terminate_instances(...)' now.", "yellow"))
         else:
-            ec2.terminate_instances(instance_ids=[slave.instance_id])
+            ec2.terminate_instances(instance_ids=[slave.id])
         return True
 
 
     # check if max_wait is reached
     @staticmethod
     def check_max_wait(slave):
-        print(colored("DEBUG: DQCCcloud.check_max_wait(" + slave.instance_id + ")", 'green'))
+        print(colored("DEBUG: DQCCcloud.check_max_wait(" + slave.id + ")", 'green'))
     
         # check how long this VM is running
-        if ( int(time.time() - slave.launch_time) ) > DQCCconfig.max_wait:
-            print("DEBUG: slave instance " + str(slave.instance_id) + " seems to be stuck for more than " + str(DQCCconfig.max_wait) + " seconds. Stopping VM.")
+        launch_timestamp = DQCCcloud.datestring_to_timestamp(slave.launch_time)
+        print(slave.launch_time)
+        if ( int(time.time() - launch_timestamp) ) > DQCCconfig.max_wait:
+            print("DEBUG: slave instance " + str(slave.id) + " seems to be stuck for more than " + str(DQCCconfig.max_wait) + " seconds. Stopping VM.")
             DQCCcloud.stop_vm(slave)
             return True
         else:
@@ -181,174 +224,98 @@ class DQCCcloud():
         date_parsed_local = dateutil.parser.parse(datestring)
         date_parsed_utc = date_parsed_local.astimezone(dateutil.tz.tzutc())
         timestamp = int(time.mktime(date_parsed_utc.timetuple()))
+        print("original: " + str(datestring))
+        print("parsed_local: " + str(date_parsed_local))
+        print("parsed_utc: " + str(date_parsed_utc))
+        print("timestamp: " + str(datestring))
         return timestamp
 
 
-    # fetch list of running slave VMs
+    # fetch list of usable slave VMs
     @staticmethod
-    def get_slave_vms(owner=None, pool=None, state=None, instance_type=None):
+    def get_slave_vms(owner=None, rendersession=None, pool=None, state=None, instance_type=None):
         print(colored("DEBUG: DQCCcloud.get_slave_vms()", 'green'))
-        
-        # reuse old list if existing
-        if DQCCconfig.slave_vms != None:
-          registered_vms = DQCCconfig.slave_vms
-        else:
-          registered_vms = []
-    
+
+        usable_slaves = []
+
         # build filters
-        filter_ami = {"image_id": DQCCconfig.ec2_slave_ami}
-        ## filtering with tags might be supported in OpenStack Havana
+        filter_ami = {'image_id': DQCCconfig.ec2_slave_ami}
+        ## filtering with custom tags will be supported in OpenStack Havana
         ## see https://blueprints.launchpad.net/nova/+spec/ec2-tags-api
-        ##filter_owner = {'tag:user_id': owner}
-        ##filter_pool = {'tag:pool_list': "*" + pool + "*"}
-        filter_state = {"state": state}
-        filter_instance_type = {"instance_type": instance_type}
+        filter_owner = {'tag:user_id': owner}
+        filter_rendersession = {'tag:rendersession': rendersession}
+        filter_pool = {'tag:pool_list': '*' + str(pool) + '*'}
+        filter_state = {'instance-state-name': state}
+        filter_instance_type = {'instance-type': instance_type}
 
         # chain filters
         filters = {}
         filters.update(filter_ami)
-        ## filtering with tags might be supported in OpenStack Havana
+        ## filtering with custom tags will be supported in OpenStack Havana
         ## see https://blueprints.launchpad.net/nova/+spec/ec2-tags-api
-        ##if owner != None:
-        ##    filters.update(filter_owner)
-        ##if pool != None:
-        ##    filters.update(filter_pool)
+        if owner != None:
+            filters.update(filter_owner)
+        if rendersession != None:
+            filters.update(filter_rendersession)
+        if pool != None:
+            filters.update(filter_pool)
         if state != None:
             filters.update(filter_state)
         if instance_type != None:
             filters.update(filter_instance_type)
+        print("DEBUG: Active filters = " + str(filters))
 
         # walk through all registered VMs
-        for reservation in ec2.get_all_instances(filters=filters):
+        for reservation in ec2.get_all_reservations(filters=filters):
             for instance in reservation.instances:
                 # we are not interested in terminated/stopping VMs
                 if ("running" in instance.state) or ("pending" in instance.state):
                     # check age of VMs
-                    instance_launch_timestamp = DQCCcloud.datestring_to_timestamp(instance.launch_time)
-                    print("DEBUG: Instance " + instance.id + " was started " + str( int(time.time() - instance_launch_timestamp) ) + " seconds ago.")
-                    # update info about registered VMs if they are known
-                    reg_vm = DQCCcloud.search_registered_vm_by_instance_id(instance.id)
-                    if reg_vm != None:
-                        # update existing entry
-                        print("INFO: VM " + instance.id + " is known. Updating entry.")
-                        reg_vm.public_dns = instance.public_dns_name
-                        reg_vm.private_dns = instance.private_dns_name
-                        reg_vm.private_ip = instance.private_ip_address
-                        reg_vm.state = instance.state
-                        reg_vm.launch_time = instance_launch_timestamp
+                    launch_timestamp = DQCCcloud.datestring_to_timestamp(instance.launch_time)
+                    print("DEBUG: Instance " + instance.id + " was started " + str( int(time.time() - launch_timestamp) ) + " seconds ago.")
+                    # check tags of instance
+                    print("DEBUG: Existing tags of VM " + instance.id + ":")
+                    for tkey, tvalue in instance.tags.items():
+                        print(" " + str(tkey) + ": " + str(tvalue))
+                        #instance.remove_tag(tkey)
+                    # check if VPN mode is enabled
+                    if DQCCconfig.ec2_vpn_enabled:
                         # get VPN IP from private IP
-                        reg_vm.vpn_ip = DQCCcloud.lookup_vpn_ip(instance.private_ip_address)
-                        if reg_vm.vpn_ip == None:
-                            print("DEBUG (1/3): Could not look up VPN IP of VM " + instance.id + ".")
+                        vpn_ip = DQCCcloud.lookup_vpn_ip(instance.private_ip_address)
+                        instance.add_tag('vpn_ip', vpn_ip)
+                        if vpn_ip == None:
+                            print("DEBUG: Could not look up VPN IP of VM " + instance.id + ".")
                             # stop VM if stuck
-                            if DQCCcloud.check_max_wait(reg_vm):
-                                continue
-                        else:
-                            print("DEBUG (1/3): VPN IP of VM " + instance.id + " is " + reg_vm.vpn_ip + ".")
-                            # get DrQueue computer info from VPN IP
-                            reg_vm.queue_info = DQCCimport.DQCCqueue.get_slave_info(reg_vm.vpn_ip)
-                            if reg_vm.queue_info == None:
-                                print("DEBUG (2/3): Could not get queue info of VM " + instance.id + ".")
-                                # stop VM if stuck
-                                if DQCCcloud.check_max_wait(reg_vm):
+                            if DQCCcloud.check_max_wait(instance):
+                                if DQCCconfig.testmode == False:
                                     continue
-                            else:
-                                print("DEBUG (2/3): Queue info of VM " + instance.id + " is \n" + str(reg_vm.queue_info) + ".")
-                                # get list of pools from DrQueue computer info
-                                reg_vm.pool_name_list = DQCCimport.DQCCqueue.concat_pool_names_of_computer(reg_vm)
-                                # set hostname if missing
-                                if reg_vm.hostname == None:
-                                    reg_vm.hostname = str(reg_vm.queue_info['hostname'])
-                                # set owner if missing
-                                if reg_vm.owner == None:
-                                    reg_vm.owner = DQCCimport.DQCCqueue.get_owner_from_pools(reg_vm)
-                                    if reg_vm.owner == None:
-                                        print("DEBUG (2/3): Could not look up owner of VM " + instance.id + ".")
-                                    else:
-                                        print("DEBUG (2/3): Owner of VM " + instance.id + " is " + reg_vm.owner + ".")
-                        print("DEBUG (3/3): Entry for VM " + instance.id + " is updated.")
+                        else:
+                            print("DEBUG: VPN IP of VM " + instance.id + " is " + vpn_ip + ".")
+                            # VM uses VPN ip address for connecting to master
+                            instance.add_tag('client_ip', vpn_ip)
                     else:
-                        # create new entry because VM was running before DQCC daemon (possibly crashed)
-                        print("INFO: VM " + instance.id + " is not known. Creating new entry.")
-                        new_vm = SlaveVM(instance.id, instance.instance_type, None)
-                        new_vm.public_dns = instance.public_dns_name
-                        new_vm.private_dns = instance.private_dns_name
-                        new_vm.private_ip = instance.private_ip_address
-                        new_vm.state = instance.state
-                        new_vm.launch_time = instance_launch_timestamp
-                        # get VPN IP from private IP
-                        new_vm.vpn_ip = DQCCcloud.lookup_vpn_ip(instance.private_ip_address)
-                        if new_vm.vpn_ip == None:
-                            print("DEBUG (1/4): Could not look up VPN IP of VM " + instance.id + ".")
+                        # VM uses private ip address for connecting to master
+                        instance.add_tag('client_ip', instance.private_ip_address)
+                    # get DrQueue computer info from client IP (either vpn_ip or private_ip)
+                    if instance.tags['client_ip'] != None:
+                        queue_info = DQCCimport.DQCCqueue.get_slave_info(instance.tags['client_ip'])
+                        if queue_info == None:
+                            print("DEBUG: Could not get queue info of VM " + instance.id + ".")
                             # stop VM if stuck
-                            if DQCCcloud.check_max_wait(new_vm):
-                                continue
-                        else:
-                            print("DEBUG (1/4): VPN IP of VM " + instance.id + " is " + new_vm.vpn_ip + ".")
-                            # get DrQueue computer info from VPN IP
-                            new_vm.queue_info = DQCCimport.DQCCqueue.get_slave_info(new_vm.vpn_ip)
-                            if new_vm.queue_info == None:
-                                print("DEBUG (2/4): Could not get queue info of VM " + instance.id + ".")
-                                # stop VM if stuck
-                                if DQCCcloud.check_max_wait(new_vm):
+                            if DQCCcloud.check_max_wait(instance):
+                                if DQCCconfig.testmode == False:
                                     continue
-                            else:
-                                print("DEBUG (2/4): Queue info of VM " + instance.id + " is \n" + str(new_vm.queue_info) + ".")
-                                # set hostname if possible
-                                if new_vm.queue_info != None:
-                                    new_vm.hostname = str(new_vm.queue_info['hostname'])
-                                # get list of pools from DrQueue computer info
-                                new_vm.pool_name_list = DQCCimport.DQCCqueue.concat_pool_names_of_computer(new_vm)
-                                # get owner from pool membership
-                                new_vm.owner = DQCCimport.DQCCqueue.get_owner_from_pools(new_vm)
-                                if new_vm.owner == None:
-                                    print("DEBUG (3/4): Could not look up owner of VM " + instance.id + ".")
-                                else:
-                                    print("DEBUG (3/4): Owner of VM " + instance.id + " is " + new_vm.owner + ".")
-                        registered_vms.append(new_vm)
-                        print("DEBUG (4/4): Entry for VM " + instance.id + " is stored.")
+                        else:
+                            instance.add_tag('queue_info', str(queue_info))
+                            print("DEBUG: Queue info of VM " + instance.id + " is \n" + str(queue_info) + ".")
+                            # get list of pools from DrQueue computer info
+                            pool_list = DQCCimport.DQCCqueue.concat_pool_names_of_computer(instance)
+                            instance.add_tag('pool_list', pool_list)
+                    print("DEBUG: Metadata for VM " + instance.id + " is updated.")
+                    usable_slaves.append(instance)
                 else:
-                    print("DEBUG: VM " + instance.id + " is not usable.")
-                    # delete VM from slave list if included
-                    for slave in DQCCconfig.slave_vms:
-                        if slave.instance_id == instance.id:
-                            DQCCconfig.slave_vms.remove(slave)
-                            print("DEBUG: Removed VM " + instance.id + " from list of known slave VMs.")
-        return registered_vms
-
-
-    # look if an instance_id is already in the list
-    @staticmethod
-    def search_registered_vm_by_instance_id(instance_id):
-        print(colored("DEBUG: DQCCcloud.search_registered_vm_by_instance_id(" + str(instance_id) + ")", 'green'))
-
-        if instance_id == None:
-          return None
-
-        if DQCCconfig.slave_vms != None:
-            for reg_vm in DQCCconfig.slave_vms:
-                if reg_vm.instance_id == instance_id:
-                    # found
-                    return reg_vm
-        # not found
-        return None
-
-
-    # look if an address is already in the list
-    @staticmethod
-    def search_registered_vm_by_address(address):
-        print(colored("DEBUG: DQCCcloud.search_registered_vm_by_address(" + str(address) + ")", 'green'))
-
-        if address == None:
-            return None
-
-        if DQCCconfig.slave_vms != None:
-            for reg_vm in DQCCconfig.slave_vms:
-                if reg_vm.vpn_ip == address:
-                    # found
-                    return reg_vm
-        # not found
-        return None
+                    print("DEBUG: VM " + instance.id + " is not usable because its state is \'" + instance.state + "\'")
+        return usable_slaves
 
 
     # create a special vpn certificate for slave
